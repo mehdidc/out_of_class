@@ -36,7 +36,7 @@ def train():
         'data': {
             'train': {
                 'pipeline':[
-                    {"name": "load_numpy", "params": {"filename": dataset, "nb": 1000}},
+                    {"name": "load_numpy", "params": {"filename": dataset}},
                     {"name": "divide_by", "params": {"value": 255.}},
                 ]
             },
@@ -67,9 +67,9 @@ def train():
                 }
             },
             'max_nb_epochs': 100,
-            'batch_size': 128,
+            'batch_size': 64,
             'pred_batch_size': 128,
-            "loss": "mean_squared_error",
+            "loss": "squared_error",
             'budget_secs': 86400,
             'seed': 42
         },
