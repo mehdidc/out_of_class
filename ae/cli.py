@@ -22,14 +22,14 @@ def train(job):
 def generate(job):
     get_params = getattr(hypers, job)
     t, g = get_params()
-    generate(g)
-    data = np.load('{}/generated.npz'.format(params['method']['save_folder']))
+    _generate(g)
+    data = np.load('{}/generated.npz'.format(g['method']['save_folder']))
     X = data['full']
     X = X.transpose((1, 0, 2, 3, 4))
     nb_iter, nb_examples = X.shape[0], X.shape[1]
     X = X.reshape((nb_iter * nb_examples,) + X.shape[2:])
     img = grid_of_images_default(X, shape=(nb_iter, nb_examples))
-    imsave('{}/samples.png'.format(params['model']['folder']), img)
+    imsave('{}/samples.png'.format(g['model']['folder']), img)
 
 if __name__ == '__main__':
-    run(train, generate)
+    run([train, generate])

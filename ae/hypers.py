@@ -109,27 +109,39 @@ def mnist_without_sparsity():
 def cifar():
     t, g = mnist()
     t, g = _set_folder(t, g, 'cifar')
+    t['optim']['max_nb_epochs'] = 1000
     dataset = '../data/cifar10.npz'
     nb_centers = 50
+    t['optim']['algo']= {
+        'name': 'adam',
+        'params': {'lr': 1e-3}
+    }
+    t['report']['metrics'] = ['precision']
+    t['report']['checkpoint'] = {
+        'loss': 'train_precision',
+        'save_best_only': True,
+        'mode': 'max',
+    }
     t['model']['params'] = {
         'stride': 1,
-        'encode_nb_filters': [64, 64, 64],
+        'encode_nb_filters': [64, 128, 256],
         'encode_filter_sizes': [5, 5, 5],
         'encode_activations': ['relu', 'relu', 'relu'],
         'code_activations': [
             {'name': 'winner_take_all_spatial', 'params': {}},
-            {'name': 'winner_take_all_channel', 'params': {'stride': 4}},
+            #{'name': 'winner_take_all_channel', 'params': {'stride': 4}},
         ],
-        'decode_nb_filters': [64, 64, 64, 64],
-        'decode_filter_sizes': [3, 3, 3, 3],
-        'decode_activations': ['relu', 'relu', 'relu', 'relu'],
+        'decode_nb_filters': [256, 256],
+        'decode_filter_sizes': [5, 5],
+        'decode_activations': ['relu', 'relu'],
         'output_filter_size': 5,
         'output_activation': {'name': 'axis_softmax', 'params': {'axis': 1}},
+        #'output_activation': 'sigmoid',
     }
     t['data']  = {
         'train': {
             'pipeline':[
-                {"name": "load_numpy", "params": {"filename": dataset}},
+                {"name": "load_numpy", "params": {"filename": dataset, "nb": 10}},
                 {"name": "divide_by", "params": {"value": 255.}},
             ]
         },
@@ -137,7 +149,8 @@ def cifar():
             {'name': 'ColorDiscretizer', 'params': {'nb_centers': nb_centers}}
         ]
     }
-    t['loss'] = {'name': 'axis_categorical_crossentropy', 'params' : {'axis': 1}}
+    t['optim']['loss'] = {'name': 'axis_categorical_crossentropy', 'params' : {'axis': 1}}
+    g['method']['params']['nb_samples'] = 100
     return t, g
 
 def svhn():
@@ -146,10 +159,22 @@ def svhn():
     
     dataset = '../data/svhn.npz'
     t['data']['train'] = {
-            'pipeline':[
-                {"name": "load_numpy", "params": {"filename": dataset}},
-                {"name": "divide_by", "params": {"value": 255.}},
-            ]
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": dataset, "nb":10}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
+    }
+    return t, g
+
+def celeba():
+    t, g = cifar()
+    t, g = _set_folder(t, g, 'celeba')
+    dataset = '../data/celeba.npz'
+    t['data']['train'] = {
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": dataset}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
     }
     return t, g
 
