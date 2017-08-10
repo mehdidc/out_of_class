@@ -72,7 +72,7 @@ basic_generate_params = {
         'name': 'iterative_refinement',
         'params': {
             'batch_size': 128,
-            'nb_samples': 10000,
+            'nb_samples': 100,
             'nb_iter': 100,
             'binarize':{
                 'name': 'none',
@@ -141,7 +141,7 @@ def cifar():
     t['data']  = {
         'train': {
             'pipeline':[
-                {"name": "load_numpy", "params": {"filename": dataset, "nb": 10}},
+                {"name": "load_numpy", "params": {"filename": dataset}},
                 {"name": "divide_by", "params": {"value": 255.}},
             ]
         },
@@ -153,6 +153,7 @@ def cifar():
     g['method']['params']['nb_samples'] = 100
     return t, g
 
+
 def svhn():
     t, g = cifar()
     t, g = _set_folder(t, g, 'svhn')
@@ -160,7 +161,7 @@ def svhn():
     dataset = '../data/svhn.npz'
     t['data']['train'] = {
         'pipeline':[
-            {"name": "load_numpy", "params": {"filename": dataset, "nb":10}},
+            {"name": "load_numpy", "params": {"filename": dataset}},
             {"name": "divide_by", "params": {"value": 255.}},
         ]
     }
@@ -178,9 +179,59 @@ def celeba():
     }
     return t, g
 
+def celeba_constrained():
+    t, g = celeba()
+    t, g = _set_folder(t, g, 'celeba_constrained')
+    t['model']['params'] = {
+        'stride': 2,
+        'encode_nb_filters': [64, 128, 256],
+        'encode_filter_sizes': [5, 5, 5],
+        'encode_activations': ['relu', 'relu', 'relu'],
+        'code_activations': [
+            {'name': 'winner_take_all_spatial', 'params': {}},
+            #{'name': 'winner_take_all_channel', 'params': {'stride': 4}},
+        ],
+        'decode_nb_filters': [256, 256],
+        'decode_filter_sizes': [5, 5],
+        'decode_activations': ['relu', 'relu'],
+        'output_filter_size': 5,
+        'output_activation': {'name': 'axis_softmax', 'params': {'axis': 1}},
+        #'output_activation': 'sigmoid',
+    }
+    #t['data']['train']['pipeline'][0]['params']["nb"] = 10
+    return t, g
+
+def hwrt():
+    t, g = mnist()
+    t, g = _set_folder(t, g, 'hwrt')
+    dataset = '../data/hwrt.npz'
+    t['data']['train'] = {
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": dataset}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
+    }
+    t['model']['params'] = {
+            'stride': 1,
+            'encode_nb_filters': [64, 128, 256],
+            'encode_filter_sizes': [5, 5, 5],
+            'encode_activations': ['relu', 'relu', 'relu'],
+            'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
+                {'name': 'winner_take_all_channel', 'params': {'stride': 4}},
+            ],
+            'decode_nb_filters': [256, 256],
+            'decode_filter_sizes': [5, 5],
+            'decode_activations': ['relu', 'relu'],
+            'output_filter_size': 5,
+            'output_activation': 'sigmoid'
+    }
+    return t, g
+
+
 def _set_folder(t, g, folder):
     folder = os.path.join(base_folder, folder)
     t['report']['outdir'] = folder
     g['model']['folder'] = folder
-    g['method']['params']['save_folder'] = '{}/gen'.format(folder)
+    g['method']['save_folder'] = '{}/gen'.format(folder)
     return t, g
