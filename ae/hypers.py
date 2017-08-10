@@ -150,7 +150,36 @@ def cifar():
         ]
     }
     t['optim']['loss'] = {'name': 'axis_categorical_crossentropy', 'params' : {'axis': 1}}
-    g['method']['params']['nb_samples'] = 100
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
+
+
+def shoes():
+    t, g = cifar()
+    t, g = _set_folder(t, g, 'shoes')
+    dataset = '../data/shoes.npz'
+    t['data']['train'] = {
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": dataset}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
+    }
     return t, g
 
 
