@@ -99,6 +99,57 @@ def mnist():
     t, g = _set_folder(t, g, 'mnist')
     return t, g
 
+def mnist_dense():
+    t, g = mnist()
+    t,g = _set_folder(t, g, 'mnist_dense')
+    t["optim"]["max_nb_epochs"] = 1000
+    """
+    t['model'] = {
+        'name': 'fully_connected',
+        'params':{
+            'nb_hidden_units': [400, 900, 100, 200, 800],
+            'activations': ['relu'] * 4 + [{'name': 'ksparse', 'params': {'zero_ratio': 0.15125}}],
+            'output_activation': 'sigmoid'
+         }
+    }
+    """
+    t['model'] = [
+        {
+            'name': 'noise',
+            'params': {
+                'type': 'salt_and_pepper',
+                'params': {
+                    'proba': 0.14
+                }
+            }
+        },
+        {
+            'name': 'fully_connected',
+            'params':{
+                'nb_hidden_units': [400, 900, 100, 200, 800],
+                'activations': ['relu'] * 4 + [{'name': 'ksparse', 'params': {'zero_ratio': 0.15125}}],
+                'output_activation': 'sigmoid'
+             }
+        }
+    ]
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
 
 def mnist_without_sparsity():
     t, g = mnist()
@@ -254,6 +305,25 @@ def hwrt():
             'decode_activations': ['relu', 'relu'],
             'output_filter_size': 5,
             'output_activation': 'sigmoid'
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 1000,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'binary_threshold',
+            'params': {
+                'one_ratio': 0.13,
+                'is_moving': True,
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
     }
     return t, g
 
