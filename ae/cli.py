@@ -6,8 +6,8 @@ from skimage.io import imsave
 
 from machinedesign.viz import grid_of_images_default
 
-from machinedesign.autoencoder.interface import train as _train
-from machinedesign.autoencoder.interface import generate as _generate
+from interface import train as _train
+from interface import generate as _generate
 
 import hypers
 
