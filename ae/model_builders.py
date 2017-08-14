@@ -1,20 +1,25 @@
 from keras.layers import Input
+from keras.layers import Add
 from keras.layers import Average
+from keras.layers import Concatenate
+from keras.layers import Multiply
+from keras.layers import ZeroPadding2D
 from keras.models import Model
 
 from machinedesign.common import check_model_shape_or_exception
 from machinedesign.common import activation_function
 from machinedesign.common import conv2d_layers_all
 from machinedesign.common import conv2d_layers
+from machinedesign.layers import LearnableNormalizer
 from machinedesign.layers import Convolution2D
 from machinedesign.layers import UpConv2D
+from machinedesign.layers import Normalize
+
 
 def vertebrate(params, input_shape, output_shape):
     assert input_shape == output_shape
     nb_channels = input_shape[0]
-
-    stride = params['stride']
-
+    encode_stride = params['encode_stride']
     encode_nb_filters = params['encode_nb_filters']
     encode_filter_sizes = params['encode_filter_sizes']
     encode_activations = params['encode_activations']
@@ -31,8 +36,8 @@ def vertebrate(params, input_shape, output_shape):
         nb_filters=encode_nb_filters,
         filter_sizes=encode_filter_sizes,
         activations=encode_activations,
-        border_mode='valid' if stride == 1 else 'same',
-        stride=stride,
+        border_mode='valid' if (encode_stride == 1) else 'same',
+        stride=encode_stride,
         conv_layer=Convolution2D,
     )
     # Apply code activations (e.g. sparsity) to all layers in `hid_layers`
@@ -46,6 +51,7 @@ def vertebrate(params, input_shape, output_shape):
         filter_sizes = decode_params['filter_sizes']
         activations = decode_params['activations']
         output_filter_size = decode_params['output_filter_size']
+        stride = decode_params['stride']
         layer = conv2d_layers(
             layer,
             nb_filters=nb_filters + [nb_channels],
@@ -63,6 +69,7 @@ def vertebrate(params, input_shape, output_shape):
     model = Model(inputs=inp, outputs=out)
     check_model_shape_or_exception(model, output_shape)
     return model
+
 
 builders = {
     'vertebrate': vertebrate,
