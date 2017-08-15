@@ -102,31 +102,21 @@ def mnist_without_sparsity():
     t['model']['params']['code_activations']  = []
     return t, g
 
+
 def mnist_dense():
     t, g = mnist()
-    t["optim"]["max_nb_epochs"] = 1000
-    t['model'] = [
-        {
-            'name': 'noise',
-            'params': {
-                'type': 'salt_and_pepper',
-                'params': {
-                    'proba': 0.14
-                }
-            }
-        },
-        {
-            'name': 'fully_connected',
-            'params':{
-                'nb_hidden_units': [400, 900, 100, 200, 800],
-                'activations': ['relu'] * 5 + [{'name': 'ksparse', 'params': {'zero_ratio': 0.74}}],
-                'output_activation': 'sigmoid',
-             }
-        }
-    ]
+    t["optim"]["max_nb_epochs"] = 3000
+    t['model'] = {
+        'name': 'fully_connected',
+        'params':{
+            'nb_hidden_units': [1000],
+            'activations': ['relu', {'name': 'winner_take_all_fc', 'params': {'zero_ratio': 0.95}}],
+            'output_activation': 'linear',
+         }
+    }
     g['method']['params'] = {
         'batch_size': 128,
-        'nb_samples': 100,
+        'nb_samples': 1000,
         'nb_iter': 100,
         'binarize':{
             'name': 'none',
@@ -144,6 +134,62 @@ def mnist_dense():
         'seed': 42,
     }
     return t, g
+
+
+def mnist_dense_sigmoid():
+    t, g = mnist_dense()
+    t["optim"]["max_nb_epochs"] = 3000
+    t['model']['params']['output_activation'] = 'sigmoid'
+    t['model']['params']['activations'] = ['relu', {'name': 'winner_take_all_fc', 'params': {'zero_ratio': 0.98}}]
+    t['optim']['algo']= {
+        'name': 'adam',
+        'params': {'lr': 1e-4}
+    }
+    return t, g
+
+
+def celeba_dense():
+    t, g = mnist_dense()
+    t['data']['train'] = {
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": '../data/celeba.npz'}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
+    }
+    return t, g
+
+
+
+def shoes_dense():
+    t, g = mnist_dense()
+    t['data']['train'] = {
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": '../data/shoes.npz'}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
+    }
+    return t, g
+
+def stl_dense():
+    t, g = mnist_dense()
+    t['data']['train'] = {
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": '../data/stl.npz'}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
+    }
+    return t, g
+
+def celeba_dense():
+    t, g=  mnist_dense()
+    t['data']['train'] = {
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": '../data/celeba.npz'}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
+    }
+    return t, g
+
 
 
 def mnist_vertebrate():
@@ -231,24 +277,6 @@ def mnist_vertebrate_deep():
     }
     return t, g
 
-
-def mnist_vertebrate_binary():
-    t, g = mnist_vertebrate()
-    t['model']['params']['code_activations'] = [
-        [{'name': 'winner_take_all_spatial', 'params': {}}, {'name': 'MinMaxNormalizer', 'params':{'axis': 0}}],
-        [{'name': 'winner_take_all_spatial', 'params': {}}, {'name': 'MinMaxNormalizer', 'params':{'axis': 0}}],
-        [{'name': 'winner_take_all_spatial', 'params': {}}, {'name': 'MinMaxNormalizer', 'params':{'axis': 0}}],
-    ]
-    return t, g 
-
-def mnist_vertebrate_deep_binary():
-    t, g = mnist_vertebrate_deep()
-    t['model']['params']['code_activations'] = [
-        [{'name': 'winner_take_all_spatial', 'params': {}}, {'name': 'MinMaxNormalizer', 'params':{'axis': 0}}],
-        [{'name': 'winner_take_all_spatial', 'params': {}}, {'name': 'MinMaxNormalizer', 'params':{'axis': 0}}],
-        [{'name': 'winner_take_all_spatial', 'params': {}}, {'name': 'MinMaxNormalizer', 'params':{'axis': 0}}],
-    ]
-    return t, g 
 
 def shoes_vertebrate():
     t, g = mnist_vertebrate()
@@ -353,11 +381,11 @@ def shoes64_vertebrate():
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/shoes64.npz' 
     return t, g
 
+
 def shoes64_vertebrate_deep():
     t, g = shoes_vertebrate_deep()
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/shoes64.npz' 
     return t, g
-
 
 
 def celeba_vertebrate():
@@ -370,6 +398,87 @@ def celeba_vertebrate_deep():
     t, g = shoes_vertebrate_deep()
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/celeba.npz'
     return t, g
+
+def celeba64_vertebrate_deep():
+    t, g = shoes64_vertebrate_deep()
+    t['data']['train']['pipeline'][0]['params']['filename'] = '../data/celeba64.npz'
+    return t, g
+
+
+def celeba64_dcgan():
+    t, g = shoes64_vertebrate_deep()
+    t['data']['train']['pipeline'][0]['params']['filename'] = '../data/celeba64.npz'
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 2,
+            'encode_nb_filters': [64, 128, 256, 512],
+            'encode_filter_sizes': [5, 5, 5, 5],
+            'encode_activations': ['relu', 'relu', 'relu', 'relu'],
+            'code_activations': [],
+            'decode_nb_filters': [256, 128, 64],
+            'decode_filter_sizes': [5, 5, 5],
+            'decode_activations': ['relu', 'relu', 'relu'],
+            'output_filter_size': 5,
+            'output_activation': 'sigmoid'
+         }
+    }
+    return t, g
+
+
+def celeba64_dcgan_extended():
+    t, g = celeba64_dcgan()
+    t['data']['train']['pipeline'][0]['params']['filename'] = '../data/celeba64.npz'
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 2,
+            'encode_nb_filters': [64, 128, 128, 256, 256, 512],
+            'encode_filter_sizes': [5] * 6,
+            'encode_activations': ['relu'] * 6,
+            'code_activations': [],
+            'decode_nb_filters': [256, 256, 128, 128, 64],
+            'decode_filter_sizes': [5] * 5,
+            'decode_activations': ['relu'] * 5,
+            'output_filter_size': 5,
+            'output_activation': 'sigmoid'
+         }
+    }
+    return t, g
+
+
+
+def celeba64_dcgan_perceptual():
+    t, g = celeba64_dcgan()
+    t['optim']['loss'] = {
+        'name': 'sum',
+        'params':{
+            'terms':[
+                # Pixel space loss
+                {
+                    'coef': 1.0,
+                    'loss': 'mean_squared_error', 
+                },
+                # VGG16 Feature space loss 
+                {
+                    'coef': 0.001,
+                    'loss': {
+                        'name': 'feature_space_mean_squared_error',
+                        'params': {
+                            'model_filename': '../discr/vgg16/model.h5',
+                            'layer': 'block5_pool',
+                            #check keras.applications.imagenet_utils.py for more info.
+                            'reverse_color_channel': True,
+                            'scale': [255., 255., 255.],
+                            'bias': [-103.939, -116.779, -123.68], 
+                        }
+                    }, 
+                }
+            ]
+        }
+    }
+    return t, g
+
 
 
 def hwrt():

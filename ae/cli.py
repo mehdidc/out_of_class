@@ -22,6 +22,7 @@ def train(job):
         return
     _train(t)
 
+
 def generate(job):
     get_params = getattr(hypers, job)
     t, g = get_params()
@@ -34,6 +35,7 @@ def generate(job):
     X = X.reshape((nb_iter * nb_examples,) + X.shape[2:])
     img = grid_of_images_default(X, shape=(nb_iter, nb_examples))
     imsave('{}/samples.png'.format(g['model']['folder']), img)
+
 
 def _set_folder(t, g, folder):
     folder = os.path.join(base_folder, folder)

@@ -11,7 +11,7 @@ def compute_objectness(probas):
 
 
 def main():
-    clf = load('discr/hwrt')
+    clf = load('discr/digits_and_letters')
     X = np.load('../ae_gen/mnist/generated.npz')['X']
     X = X[0]
     probas = clf.predict(X)
