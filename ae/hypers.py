@@ -1,5 +1,3 @@
-import os
-
 basic_train_params = {
     'family': 'autoencoder',
     'input_col': 'X',
@@ -59,7 +57,7 @@ basic_train_params = {
         'batch_size': 64,
         'pred_batch_size': 128,
         "loss": "squared_error",
-        'budget_secs': 86400,
+        'budget_secs': 3600 * 24 * 5,
         'seed': 42
     },
 }
@@ -96,6 +94,7 @@ def mnist():
     t = basic_train_params.copy()
     g = basic_generate_params.copy()
     return t, g
+
 
 def mnist_without_sparsity():
     t, g = mnist()
@@ -147,6 +146,263 @@ def mnist_dense_sigmoid():
     }
     return t, g
 
+def mnist_dcgan():
+    t = basic_train_params.copy()
+    g = basic_generate_params.copy()
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [16, 32, 64],
+            'encode_filter_sizes': [10, 10, 10],
+            'encode_activations': ['relu', 'relu', 'relu'],
+            'code_activations': [],
+            'decode_nb_filters': [32, 16],
+            'decode_filter_sizes': [10, 10],
+            'decode_activations': ['relu', 'relu'],
+            'output_filter_size': 10,
+            'output_activation': 'sigmoid'
+         }
+    }
+    return t, g
+
+
+def mnist_dcgan_sparse():
+    t = basic_train_params.copy()
+    g = basic_generate_params.copy()
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [16, 32, 64],
+            'encode_filter_sizes': [5, 5, 5],
+            'encode_activations': ['relu', 'relu', 'relu'],
+            'code_activations': [{'name': 'winner_take_all_lifetime', 'params':{'zero_ratio': 0.8}}],
+            'decode_nb_filters': [32, 16],
+            'decode_filter_sizes': [5, 5],
+            'decode_activations': ['relu', 'relu'],
+            'output_filter_size': 5,
+            'output_activation': 'sigmoid'
+         }
+    }
+    return t, g
+
+
+def mnist_dcgan_dropout():
+    t = basic_train_params.copy()
+    g = basic_generate_params.copy()
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [128, 128, 128],
+            'encode_filter_sizes': [10, 10, 10],
+            'encode_activations': ['relu', 'relu', 'relu'],
+            'code_activations': [{'name': 'Dropout', 'params':{'rate': 0.5}}],
+            'decode_nb_filters': [128, 128],
+            'decode_filter_sizes': [10, 10],
+            'decode_activations': ['relu', 'relu'],
+            'output_filter_size': 10,
+            'output_activation': 'sigmoid'
+         }
+    }
+    return t, g
+
+
+def flaticon_data(nc=32):
+    c = '' if nc == 32 else '64'
+    return {
+        'train': {
+            'pipeline':[
+                {"name": "load_numpy", "params": {"filename": '../data/flaticon{}.npz'.format(c)}},
+                {"name": "divide_by", "params": {"value": 255.}},
+            ]
+        },
+        'transformers':[
+        ]
+    }
+
+
+def flaticon():
+    t, g = mnist()
+    t['data'] = flaticon_data()
+    t['model']  = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [128, 256, 512],
+            'encode_filter_sizes': [5] * 3,
+            'encode_activations': ['relu'] * 3,
+            'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
+                {'name': 'winner_take_all_channel', 'params': {'stride': 4}},
+            ],
+            'decode_nb_filters': [],
+            'decode_filter_sizes': [],
+            'decode_activations': [],
+            'output_filter_size': 13,
+            'output_activation': 'sigmoid'
+         }
+    }
+    return t,g
+
+
+def flaticon_vertebrate():
+    t, g = mnist_vertebrate()
+    t['data'] = flaticon_data()
+    return t, g
+
+
+def flaticon64_vertebrate():
+    t, g = shoes64_vertebrate() 
+    t['data'] = flaticon_data(nc=64)
+    return t, g
+
+
+def flaticon64_vertebrate_deep():
+    t, g = shoes64_vertebrate_deep() 
+    t['data'] = flaticon_data(nc=64)
+    t['optim']['batch_size'] = 32
+    t['optim']['pred_batch_size'] = 32
+    return t, g
+
+
+def flaticon64_vertebrate_deep_without_sparsity():
+    t, g = shoes64_vertebrate_deep() 
+    t['data'] = flaticon_data(nc=64)
+    t['optim']['batch_size'] = 32
+    t['optim']['pred_batch_size'] = 32
+    t['model']['params']['code_activations'] = []
+    return t, g
+
+
+def flaticon64_vertebrate_deep2():
+    t, g = shoes64_vertebrate_deep() 
+    t['data'] = flaticon_data(nc=64)
+    t['optim']['batch_size'] = 32
+    t['optim']['pred_batch_size'] = 32
+
+    t['model'] = {
+        'name': 'vertebrate',
+        'params': {
+            'encode_stride': 2,
+            'encode_nb_filters': [256, 256, 256, 256],
+            'encode_filter_sizes': [5, 5, 5, 5],
+            'encode_activations': ['relu', 'relu', 'relu', 'relu'],
+            'code_activations': [
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+            ],
+            'decode': [
+                {
+                    'nb_filters': [],
+                    'filter_sizes': [],
+                    'activations': [],
+                    'output_filter_size': 5,
+                    'stride': 2,
+                },
+                {
+                    'nb_filters': [256],
+                    'filter_sizes': [5],
+                    'activations': ['relu'],
+                    'output_filter_size': 5,
+                    'stride': 2,
+                },
+                {
+                    'nb_filters': [256, 256],
+                    'filter_sizes': [5, 5],
+                    'activations': ['relu', 'relu'],
+                    'output_filter_size': 5,
+                    'stride': 2,
+                },
+                {
+                    'nb_filters': [256, 256, 256],
+                    'filter_sizes': [5, 5, 5],
+                    'activations': ['relu', 'relu', 'relu'],
+                    'output_filter_size': 5,
+                    'stride': 2,
+                },
+            ],
+            'output_activation': 'sigmoid',
+        },
+    }
+    return t, g
+
+
+def flaticon64_vertebrate_deep3():
+    t, g = shoes64_vertebrate_deep() 
+    t['data'] = flaticon_data(nc=64)
+    t['optim']['batch_size'] = 32
+    t['optim']['pred_batch_size'] = 32
+
+    t['model'] = {
+        'name': 'vertebrate',
+        'params': {
+            'encode_stride': 2,
+            'encode_nb_filters': [256, 256, 256, 256],
+            'encode_filter_sizes': [5, 5, 5, 5],
+            'encode_activations': ['relu', 'relu', 'relu', 'relu'],
+            'code_activations': [
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+            ],
+            'decode': [
+                {
+                    'nb_filters': [],
+                    'filter_sizes': [],
+                    'activations': [],
+                    'output_filter_size': 5,
+                    'stride': 2,
+                },
+                {
+                    'nb_filters': [],
+                    'filter_sizes': [],
+                    'activations': [],
+                    'output_filter_size': 9,
+                    'stride': 4,
+                },
+                {
+                    'nb_filters': [],
+                    'filter_sizes': [],
+                    'activations': [],
+                    'output_filter_size': 13,
+                    'stride': 8,
+                },
+                {
+                    'nb_filters': [],
+                    'filter_sizes': [],
+                    'activations': [],
+                    'output_filter_size': 17,
+                    'stride': 16,
+                },
+            ],
+            'output_activation': 'sigmoid',
+        },
+    }
+    return t, g
+
+
+def mnist_dcgan_nontrained():
+    t, g = mnist_dcgan()
+    t['optim']['algo']= {
+        'name': 'adam',
+        'params': {'lr': 0.0}
+    }
+    return t, g
+
+
+def mnist_nontrained():
+    t, g = mnist()
+    t['optim']['algo']= {
+        'name': 'adam',
+        'params': {'lr': 0.0}
+    }
+    return t, g
+
 
 def celeba_dense():
     t, g = mnist_dense()
@@ -157,7 +413,6 @@ def celeba_dense():
         ]
     }
     return t, g
-
 
 
 def shoes_dense():
@@ -179,18 +434,6 @@ def stl_dense():
         ]
     }
     return t, g
-
-def celeba_dense():
-    t, g=  mnist_dense()
-    t['data']['train'] = {
-        'pipeline':[
-            {"name": "load_numpy", "params": {"filename": '../data/celeba.npz'}},
-            {"name": "divide_by", "params": {"value": 255.}},
-        ]
-    }
-    return t, g
-
-
 
 def mnist_vertebrate():
     t, g = mnist()
@@ -426,6 +669,23 @@ def celeba64_dcgan():
     return t, g
 
 
+def celeba64aligned_dcgan():
+    t, g = celeba64_dcgan()
+    t['data']['train']['pipeline'] = [
+        {"name": "load_hdf5", "params": {"filename": "../data/celeba64_align.h5", "nb": 30000}},
+        {"name": "divide_by", "params": {"value": 255.}},
+    ]
+    return t, g
+
+def celeba64aligned_vertebrate_deep():
+    t, g = celeba64_vertebrate_deep()
+    t['data']['train']['pipeline'] = [
+        {"name": "load_hdf5", "params": {"filename": "../data/celeba64_align.h5", "nb": 30000}},
+        {"name": "divide_by", "params": {"value": 255.}},
+    ]
+    return t, g
+
+
 def celeba64_dcgan_extended():
     t, g = celeba64_dcgan()
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/celeba64.npz'
@@ -480,7 +740,6 @@ def celeba64_dcgan_perceptual():
     return t, g
 
 
-
 def hwrt():
     t, g = mnist()
     dataset = '../data/hwrt.npz'
@@ -514,6 +773,36 @@ def hwrt():
             'params': {
                 'one_ratio': 0.13,
                 'is_moving': True,
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
+
+def hwrt_dcgan():
+    t, g = mnist_dcgan()
+    dataset = '../data/hwrt.npz'
+    t['data']['train'] = {
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": dataset}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'binary_threshold',
+            'params': {
+                'value': .6,
+                'is_moving': False,
             }
         },
         'noise':{
@@ -595,7 +884,6 @@ def svhn_discrete():
 
 def celeba_discrete():
     t, g = cifar_discrete()
-    dataset = '../data/celeba.npz'
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/celeba.npz'
     return t, g
 
@@ -603,4 +891,3 @@ def shoes_discrete():
     t, g = cifar_discrete()
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/shoes.npz'
     return t, g
-
