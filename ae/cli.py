@@ -10,6 +10,12 @@ from interface import train as _train
 from interface import generate as _generate
 
 import hypers
+import jobs
+
+from lightjob.utils import summarize
+from lightjob.cli import load_db
+from lightjob.db import SUCCESS
+
 
 base_folder = 'results'
 
@@ -22,11 +28,42 @@ def train(job):
         return
     _train(t)
 
+def train_job(job):
+    db = load_db()
+    rng = np.random
+    get_params = getattr(jobs, job)
+    t, g = get_params(rng)
+    content = {'train': t, 'generate': g}
+    job_id = summarize(content)
+    if db.job_exists_by_summary(job_id):
+        print('Job exists.')
+        return
+    nb = db.safe_add_job(content, sampler=job)
+    assert nb == 1
+    t, g = _set_folder(t, g, os.path.join('jobs', job_id))
+    if os.path.exists(t['report']['outdir']):
+        print('Repository "{}" exists, I dont override for safety. Delete it if you want to.'.format(t['report']['outdir']))
+        return
+    _train(t)
+    db.modify_state_of(job_id, SUCCESS)
+
+def generate_job(job):
+    db = load_db()
+    j = db.get_job_by_summary(job)
+    t, g = j['content']['train'], j['content']['generate']
+    t, g = _set_folder(t, g, os.path.join('jobs', job))
+    if os.path.exists(g['method']['save_folder']):
+        print('Repository {} exists, I dont override for safety. Delete it if you want to'.format(g['method']['save_folder']))
+        return
+    _generate_from(g)
 
 def generate(job):
     get_params = getattr(hypers, job)
     t, g = get_params()
     t, g = _set_folder(t, g, job)
+    _generate_from(g)
+
+def _generate_from(g):
     _generate(g)
     data = np.load('{}/generated.npz'.format(g['method']['save_folder']))
     X = data['full']
@@ -42,7 +79,7 @@ def _set_folder(t, g, folder):
     t['report']['outdir'] = folder
     g['model']['folder'] = folder
     g['method']['save_folder'] = '{}/gen'.format(folder)
-
     return t, g
+
 if __name__ == '__main__':
-    run([train, generate])
+    run([train, generate, train_job, generate_job])

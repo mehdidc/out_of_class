@@ -6,14 +6,14 @@ basic_train_params = {
         'name': 'convolutional_bottleneck',
         'params':{
             'stride': 1,
-            'encode_nb_filters': [64, 64, 64],
+            'encode_nb_filters': [128, 128, 128],
             'encode_filter_sizes': [5, 5, 5],
             'encode_activations': ['relu', 'relu', 'relu'],
             'code_activations': [
                 {'name': 'winner_take_all_spatial', 'params': {}},
                 {'name': 'winner_take_all_channel', 'params': {'stride': 4}},
             ],
-            'decode_nb_filters': [64, 64],
+            'decode_nb_filters': [128, 128],
             'decode_filter_sizes': [5, 5],
             'decode_activations': ['relu', 'relu'],
             'output_filter_size': 5,
@@ -70,7 +70,7 @@ basic_generate_params = {
         'name': 'iterative_refinement',
         'params': {
             'batch_size': 128,
-            'nb_samples': 100,
+            'nb_samples': 1000,
             'nb_iter': 100,
             'binarize':{
                 'name': 'none',
@@ -90,19 +90,107 @@ basic_generate_params = {
 }
 
 
+def mnist_basic():
+    # ICCC model
+    t, g = mnist()
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [128, 128, 128],
+            'encode_filter_sizes': [5, 5, 5],
+            'encode_activations': ['relu', 'relu', 'relu'],
+            'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
+                {'name': 'winner_take_all_channel', 'params': {'stride': 4}},
+            ],
+            'decode_nb_filters': [],
+            'decode_filter_sizes': [],
+            'decode_activations': [],
+            'output_filter_size': 13,
+            'output_activation': 'linear'
+         }
+    }
+    return t, g
+
+
+def iccc():
+    t, g = mnist_basic()
+    t['model']['params']['output_activation'] = 'sigmoid'
+    return t, g 
+
+
 def mnist():
     t = basic_train_params.copy()
     g = basic_generate_params.copy()
     return t, g
 
 
-def mnist_without_sparsity():
+def mnist2():
+    return mnist()
+
+def mnist_deep():
+    nb = 6
     t, g = mnist()
-    t['model']['params']['code_activations']  = []
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [128] * nb,
+            'encode_filter_sizes': [5] * nb,
+            'encode_activations': ['relu'] * nb,
+            'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
+                {'name': 'winner_take_all_channel', 'params': {'stride': 1}},
+            ],
+            'decode_nb_filters': [128] * (nb - 1),
+            'decode_filter_sizes': [5] * (nb - 1),
+            'decode_activations': ['relu'] * (nb - 1),
+            'output_filter_size': 5,
+            'output_activation': 'sigmoid'
+         }
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
     return t, g
 
 
+def mnist_with_denoising():
+    t, g = mnist()
+    t['model'] = [
+        {'name': 'noise', 'params':{'type': 'salt_and_pepper', 'params':{'proba': 0.5}}},
+        t['model'],
+    ]
+    return t, g
+
+
+def mnist_with_denoising2():
+    t, g = mnist()
+    t['model'] = [
+        {'name': 'noise', 'params':{'type': 'salt_and_pepper', 'params':{'proba': 0.3}}},
+        t['model'],
+    ]
+    return t, g
+
+
+
 def mnist_dense():
+    # sparse with winner take all fc (mini-batch based)
     t, g = mnist()
     t["optim"]["max_nb_epochs"] = 3000
     t['model'] = {
@@ -135,18 +223,42 @@ def mnist_dense():
     return t, g
 
 
-def mnist_dense_sigmoid():
-    t, g = mnist_dense()
+def mnist_dense2():
+    t, g = mnist()
     t["optim"]["max_nb_epochs"] = 3000
-    t['model']['params']['output_activation'] = 'sigmoid'
-    t['model']['params']['activations'] = ['relu', {'name': 'winner_take_all_fc', 'params': {'zero_ratio': 0.98}}]
-    t['optim']['algo']= {
-        'name': 'adam',
-        'params': {'lr': 1e-4}
+    t['model'] = [
+        {'name': 'noise', 'params':{'type': 'salt_and_pepper', 'params':{'proba': 0.5}}},
+        {
+            'name': 'fully_connected',
+            'params':{
+                'nb_hidden_units': [1000],
+                'activations': ['relu'],
+                'output_activation': 'sigmoid',
+             }
+        }
+    ]
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 10000,
+        'nb_iter': 100,
+        'noise':{
+            'name': 'salt_and_pepper',
+            'params': {
+                'proba': 0.3
+            }
+        },
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
     }
     return t, g
 
 def mnist_dcgan():
+    # reduce size of space to 1 in the bottleneck
     t = basic_train_params.copy()
     g = basic_generate_params.copy()
     t['model'] = {
@@ -164,47 +276,23 @@ def mnist_dcgan():
             'output_activation': 'sigmoid'
          }
     }
-    return t, g
-
-
-def mnist_dcgan_sparse():
-    t = basic_train_params.copy()
-    g = basic_generate_params.copy()
-    t['model'] = {
-        'name': 'convolutional_bottleneck',
-        'params':{
-            'stride': 1,
-            'encode_nb_filters': [16, 32, 64],
-            'encode_filter_sizes': [5, 5, 5],
-            'encode_activations': ['relu', 'relu', 'relu'],
-            'code_activations': [{'name': 'winner_take_all_lifetime', 'params':{'zero_ratio': 0.8}}],
-            'decode_nb_filters': [32, 16],
-            'decode_filter_sizes': [5, 5],
-            'decode_activations': ['relu', 'relu'],
-            'output_filter_size': 5,
-            'output_activation': 'sigmoid'
-         }
-    }
-    return t, g
-
-
-def mnist_dcgan_dropout():
-    t = basic_train_params.copy()
-    g = basic_generate_params.copy()
-    t['model'] = {
-        'name': 'convolutional_bottleneck',
-        'params':{
-            'stride': 1,
-            'encode_nb_filters': [128, 128, 128],
-            'encode_filter_sizes': [10, 10, 10],
-            'encode_activations': ['relu', 'relu', 'relu'],
-            'code_activations': [{'name': 'Dropout', 'params':{'rate': 0.5}}],
-            'decode_nb_filters': [128, 128],
-            'decode_filter_sizes': [10, 10],
-            'decode_activations': ['relu', 'relu'],
-            'output_filter_size': 10,
-            'output_activation': 'sigmoid'
-         }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 10000,
+        'nb_iter': 100,
+        'noise':{
+            'name': 'salt_and_pepper',
+            'params': {
+                'proba': 0.3
+            }
+        },
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
     }
     return t, g
 
@@ -244,7 +332,53 @@ def flaticon():
             'output_activation': 'sigmoid'
          }
     }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'binary_threshold',
+            'params': {
+                'one_ratio': 0.2,
+                'is_moving': True,
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+
     return t,g
+
+
+def flaticon_deep():
+    t, g = mnist()
+    t['data'] = flaticon_data()
+    t['model']  = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [128, 256, 512],
+            'encode_filter_sizes': [5] * 3,
+            'encode_activations': ['relu'] * 3,
+            'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
+                {'name': 'winner_take_all_channel', 'params': {'stride': 1}},
+            ],
+            'decode_nb_filters': [256, 128],
+            'decode_filter_sizes': [5, 5],
+            'decode_activations': ['relu', 'relu'],
+            'output_filter_size': 5,
+            'output_activation': 'sigmoid'
+         }
+    }
+    return t,g
+
+
 
 
 def flaticon_vertebrate():
@@ -327,6 +461,25 @@ def flaticon64_vertebrate_deep2():
             ],
             'output_activation': 'sigmoid',
         },
+    } 
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'binary_threshold',
+            'params': {
+                'one_ratio': 0.3,
+                'is_moving': True,
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
     }
     return t, g
 
@@ -383,6 +536,27 @@ def flaticon64_vertebrate_deep3():
             'output_activation': 'sigmoid',
         },
     }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'binary_threshold',
+            'params': {
+                'one_ratio': 0.2,
+                'is_moving': True,
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+
+
     return t, g
 
 
@@ -478,6 +652,71 @@ def mnist_vertebrate():
     return t, g
 
 
+def mnist_vertebrate2():
+    t, g = mnist()
+    t['model'] = {
+        'name': 'vertebrate',
+        'params': {
+            'encode_stride': 1,
+            'encode_nb_filters': [64, 128, 256],
+            'encode_filter_sizes': [5, 5, 5],
+            'encode_activations': ['relu', 'relu', 'relu'],
+            'code_activations': [
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+                    [{'name': 'winner_take_all_spatial', 'params': {}}],
+            ],
+            'decode': [
+                {
+                    'nb_filters': [],
+                    'filter_sizes': [],
+                    'activations': [],
+                    'output_filter_size': 5,
+                    'stride': 1,
+                },
+                {
+                    'nb_filters': [],
+                    'filter_sizes': [],
+                    'activations': [],
+                    'output_filter_size': 9,
+                    'stride': 1,
+                },
+                {
+                    'nb_filters': [],
+                    'filter_sizes': [],
+                    'activations': [],
+                    'output_filter_size': 13,
+                    'stride': 1,
+                },
+            ],
+            'output_activation': 'sigmoid',
+        },
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'binary_threshold',
+            'params': {
+                'one_ratio': 0.2,
+                'is_moving': True,
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+
+
+
+    return t, g
+
+
 def mnist_vertebrate_deep():
     t, g = mnist()
     t['model'] = {
@@ -517,6 +756,23 @@ def mnist_vertebrate_deep():
             ],
             'output_activation': 'sigmoid',
         },
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 10000,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
     }
     return t, g
 
@@ -785,6 +1041,18 @@ def hwrt():
     }
     return t, g
 
+def hwrt_padded():
+    t, g = mnist()
+    dataset = '../data/hwrt_padded.npz'
+    t['data']['train'] = {
+        'pipeline':[
+            {"name": "load_numpy", "params": {"filename": dataset}},
+            {"name": "divide_by", "params": {"value": 255.}},
+        ]
+    }
+    return t, g 
+ 
+
 def hwrt_dcgan():
     t, g = mnist_dcgan()
     dataset = '../data/hwrt.npz'
@@ -885,6 +1153,25 @@ def svhn_discrete():
 def celeba_discrete():
     t, g = cifar_discrete()
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/celeba.npz'
+    return t, g
+
+def celeba2_discrete():
+    t, g = celeba_discrete()
+    t['model']['params'] = {
+        'stride': 1,
+        'encode_nb_filters': [64, 128, 256],
+        'encode_filter_sizes': [5, 5, 5],
+        'encode_activations': ['relu', 'relu', 'relu'],
+        'code_activations': [
+            {'name': 'winner_take_all_spatial', 'params': {}},
+            {'name': 'winner_take_all_channel', 'params': {'stride': 2}},
+        ],
+        'decode_nb_filters': [256, 256],
+        'decode_filter_sizes': [5, 5],
+        'decode_activations': ['relu', 'relu'],
+        'output_filter_size': 5,
+        'output_activation': {'name': 'axis_softmax', 'params': {'axis': 1}},
+    }
     return t, g
 
 def shoes_discrete():

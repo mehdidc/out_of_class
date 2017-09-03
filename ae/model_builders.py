@@ -1,19 +1,13 @@
 from keras.layers import Input
-from keras.layers import Add
 from keras.layers import Average
-from keras.layers import Concatenate
-from keras.layers import Multiply
-from keras.layers import ZeroPadding2D
 from keras.models import Model
 
 from machinedesign.common import check_model_shape_or_exception
 from machinedesign.common import activation_function
 from machinedesign.common import conv2d_layers_all
 from machinedesign.common import conv2d_layers
-from machinedesign.layers import LearnableNormalizer
 from machinedesign.layers import Convolution2D
 from machinedesign.layers import UpConv2D
-from machinedesign.layers import Normalize
 
 
 def vertebrate(params, input_shape, output_shape):
@@ -64,8 +58,7 @@ def vertebrate(params, input_shape, output_shape):
         hid_layers[i] = layer
     # Combine `hid_layers`
     x = Average()(hid_layers)
-    x = activation_function(output_activation)(x)
-    out = x
+    out = activation_function(output_activation)(x)
     model = Model(inputs=inp, outputs=out)
     check_model_shape_or_exception(model, output_shape)
     return model
