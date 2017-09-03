@@ -129,21 +129,21 @@ def mnist():
 def mnist2():
     return mnist()
 
-def mnist_deep():
+def mnist3():
     nb = 6
     t, g = mnist()
     t['model'] = {
         'name': 'convolutional_bottleneck',
         'params':{
             'stride': 1,
-            'encode_nb_filters': [128] * nb,
+            'encode_nb_filters': [128] * (nb - 1) + [256],
             'encode_filter_sizes': [5] * nb,
             'encode_activations': ['relu'] * nb,
             'code_activations': [
                 {'name': 'winner_take_all_spatial', 'params': {}},
                 {'name': 'winner_take_all_channel', 'params': {'stride': 1}},
             ],
-            'decode_nb_filters': [128] * (nb - 1),
+            'decode_nb_filters': [256] + [128] * (nb - 2),
             'decode_filter_sizes': [5] * (nb - 1),
             'decode_activations': ['relu'] * (nb - 1),
             'output_filter_size': 5,
@@ -168,6 +168,47 @@ def mnist_deep():
         'seed': 42,
     }
     return t, g
+
+def mnist4():
+    nb = 6
+    t, g = mnist()
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [128] * (nb - 1) + [256],
+            'encode_filter_sizes': [5] * nb,
+            'encode_activations': ['relu'] * nb,
+            'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
+                {'name': 'winner_take_all_kchannel', 'params': {'zero_ratio': 0.8}},
+            ],
+            'decode_nb_filters': [256] + [128] * (nb - 2),
+            'decode_filter_sizes': [5] * (nb - 1),
+            'decode_activations': ['relu'] * (nb - 1),
+            'output_filter_size': 5,
+            'output_activation': 'sigmoid'
+         }
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
+
 
 
 def mnist_with_denoising():
@@ -1178,3 +1219,21 @@ def shoes_discrete():
     t, g = cifar_discrete()
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/shoes.npz'
     return t, g
+
+def shoes_discrete2():
+    t, g = cifar_discrete()
+    t['data']['train']['pipeline'][0]['params']['filename'] = '../data/shoes.npz'
+    t['model']['params'] = {
+        'stride': 2,
+        'encode_nb_filters': [64] * 5,
+        'encode_filter_sizes': [5] * 5,
+        'encode_activations': ['relu'] * 5,
+        'code_activations': [
+        ],
+        'decode_nb_filters': [64] * 4,
+        'decode_filter_sizes': [5] * 4,
+        'decode_activations': ['relu'] * 4,
+        'output_filter_size': 5,
+        'output_activation': {'name': 'axis_softmax', 'params': {'axis': 1}},
+    }
+    return t, g 

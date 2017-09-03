@@ -21,22 +21,34 @@ from metrics import compute_frechet
 from metrics import compute_objectness
 from metrics import compute_normalized_entropy
 
+from lightjob.cli import load_db
 
 def evaluate(*, out='jobs.csv'):
+    db = load_db('ae/.lightjob')
     dirname = os.path.join('ae', 'results', 'jobs')
     folders = os.listdir(dirname)
     folders = [os.path.join(dirname, folder) for folder in folders]
-    _evaluate(folders, out)
+    df = _evaluate(folders)
+    for i in range(len(df)):
+        r = df.iloc[i]
+        name = r['name']
+        stats = r.drop('name').to_dict()
+        for k, v in stats.items():
+            stats[k] = float(v)
+        db.job_update(name, {'stats': stats})
 
 
-def _evaluate(folders, out):
+def _evaluate(folders):
     nb = 1000
     theta = 0.9
     digits = np.arange(0, 10)
     letters = np.arange(10, 36)
 
     data = np.load('data/digits.npz')
-    Xtrue = data['X'][0:nb]
+    Xtrue_digits = data['X'][0:nb]
+    data = np.load('data/letters.npz')
+    Xtrue_letters = data['X'][0:nb]
+
     clf_digits_and_letters = load('discr/digits_and_letters_balanced')
     clf_digits = load('discr/digits')
     clf_letters = load('discr/letters')
@@ -46,7 +58,8 @@ def _evaluate(folders, out):
         inputs=clf_digits_and_letters.layers[0].input, 
         outputs=clf_digits_and_letters.get_layer('p_re_lu_4').output
     )
-    htrue = enc.predict(Xtrue)
+    htrue_digits = enc.predict(Xtrue_digits)
+    htrue_letters = enc.predict(Xtrue_letters)
     rows = [] 
     for folder in folders:
         print(folder)
@@ -83,14 +96,18 @@ def _evaluate(folders, out):
         col['hwrt_entropy'] = compute_normalized_entropy(probas)
 
         h = enc.predict(X)
-        col['frechet'] = compute_frechet(h, htrue)
-        col['mmd'] = compute_mmd(h, htrue)
+        col['frechet_digits'] = abs(compute_frechet(h, htrue_digits))
+        col['mmd_digits'] = compute_mmd(h, htrue_digits)
+
+        col['frechet_letters'] = abs(compute_frechet(h, htrue_letters))
+        col['mmd_letters'] = compute_mmd(h, htrue_letters)
         rows.append(col)
-    df = pd.DataFrame(rows)
-    df.to_csv(out, index=False)
+    return pd.DataFrame(rows)
 
 
-def ppgn(*, generator='mnist', discriminator='digits', layer_name='dense_2', unit_id=0, nb_iter=100, nb_samples=9, eps1=1., eps2=1., out='out.png'):
+def ppgn(*, generator='mnist', discriminator='digits', layer_name='dense_2', 
+         unit_id=0, nb_iter=100, nb_samples=9, eps1=1., eps2=1., out='out.png'):
+
     ae = load('ae/results/{}'.format(generator))
     discr = load('discr/{}'.format(discriminator))
     x = discr.layers[0].input

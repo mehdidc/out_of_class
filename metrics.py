@@ -20,7 +20,7 @@ def compute_mmd(X, Y, kernel=gaussian_kernel):
     c = phi(Y, Y)
     N = X.shape[0]
     M = Y.shape[0]
-    mmd_sqr = 1. / (N**2) * a - (2. / (N * M)) * b + (1. / M**2) * c
+    mmd_sqr = (1. / (N**2)) * a - (2. / (N * M)) * b + (1. / M**2) * c
     return mmd_sqr
  
 
@@ -35,7 +35,7 @@ def compute_frechet(X, Y):
     cov_x = np.cov(X.T)
     cov_y = np.cov(Y.T)
 
-    return ((mu_x - mu_y)**2).sum() + np.trace(cov_x + cov_y -  2 * sqrtm(cov_x * cov_y))
+    return ((mu_x - mu_y)**2).sum() + np.trace(cov_x + cov_y -  2 * sqrtm(np.dot(cov_x, cov_y)))
 
 
 def compute_objectness(probas):
