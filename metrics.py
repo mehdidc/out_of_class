@@ -53,6 +53,14 @@ def compute_normalized_entropy(probas):
     score = score.sum(axis=1)
     return score.mean() / np.log(probas.shape[1])
 
+def compute_normalized_diversity(probas):
+    y = probas.argmax(axis=1)
+    ent = 0.0
+    for cl in range(probas.shape[1]):
+        pr = (y == cl).mean()
+        ent += -pr * np.log(pr + 1e-10)
+    return ent / np.log(probas.shape[1])
+
 
 def compute_count(probas, classes, theta=0.9):
     pr = probas[:, classes]

@@ -20,6 +20,7 @@ from metrics import compute_mmd
 from metrics import compute_frechet
 from metrics import compute_objectness
 from metrics import compute_normalized_entropy
+from metrics import compute_normalized_diversity
 
 from lightjob.cli import load_db
 
@@ -86,14 +87,17 @@ def _evaluate(folders):
         probas = clf_digits.predict(X)
         col['digits_objectness'] = compute_objectness(probas)
         col['digits_entropy'] = compute_normalized_entropy(probas)
+        col['digits_diversity'] = compute_normalized_diversity(probas)
 
         probas = clf_letters.predict(X)
         col['letters_objectness'] = compute_objectness(probas)
         col['letters_entropy'] = compute_normalized_entropy(probas)
+        col['letters_diversity'] = compute_normalized_diversity(probas)
 
         probas = clf_hwrt.predict(X)
         col['hwrt_objectness'] = compute_objectness(probas)
         col['hwrt_entropy'] = compute_normalized_entropy(probas)
+        col['hwrt_diversity'] = compute_normalized_diversity(probas)
 
         h = enc.predict(X)
         col['frechet_digits'] = abs(compute_frechet(h, htrue_digits))
