@@ -1225,12 +1225,12 @@ def shoes_discrete2():
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/shoes.npz'
     t['model']['params'] = {
         'stride': 2,
-        'encode_nb_filters': [64] * 5,
+        'encode_nb_filters': [64, 64, 128, 128, 256],
         'encode_filter_sizes': [5] * 5,
         'encode_activations': ['relu'] * 5,
         'code_activations': [
         ],
-        'decode_nb_filters': [64] * 4,
+        'decode_nb_filters': [128, 128, 128, 256] ,
         'decode_filter_sizes': [5] * 4,
         'decode_activations': ['relu'] * 4,
         'output_filter_size': 5,
