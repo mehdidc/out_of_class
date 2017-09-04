@@ -1,5 +1,53 @@
 from hypers import mnist
 
+def mnist_basic(rng):
+    nb = int(rng.choice((1, 2, 3, 4, 5, 6)))
+    k = 5
+    fsize = (k - 1) * nb + 1
+    stride = 1
+    t, g = mnist()
+    t['report']['outdir'] = ''
+    g['model']['folder'] = ''
+    g['method']['save_folder'] =''
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [128] * nb,
+            'encode_filter_sizes': [k] * nb,
+            'encode_activations': ['relu'] * nb,
+            'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
+                {'name': 'winner_take_all_channel', 'params': {'stride': stride}},
+            ],
+            'decode_nb_filters': [],
+            'decode_filter_sizes': [],
+            'decode_activations': [],
+            'output_filter_size': fsize,
+            'output_activation': 'sigmoid'
+         }
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 1000,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
+
+
+
 def mnist_deep(rng):
     nb = int(rng.choice((1, 2, 3, 4, 5, 6)))
     stride = int(rng.choice((0, 1, 2, 4)))
