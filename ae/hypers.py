@@ -143,6 +143,23 @@ def mnist():
     return t, g
 
 
+def mnist_without_sparsity():
+    t, g = mnist()
+    t['model']['params'] = {
+        'stride': 1,
+        'encode_nb_filters': [16, 16, 16],
+        'encode_filter_sizes': [5, 5, 5],
+        'encode_activations': ['relu', 'relu', 'relu'],
+        'code_activations': [
+        ],
+        'decode_nb_filters': [16, 16],
+        'decode_filter_sizes': [5, 5],
+        'decode_activations': ['relu', 'relu'],
+        'output_filter_size': 5,
+        'output_activation': 'sigmoid'
+    }
+    return t, g
+
 def mnist2():
     return mnist()
 
@@ -314,6 +331,40 @@ def mnist_dense2():
         'seed': 42,
     }
     return t, g
+
+def mnist_dense3():
+    t, g = mnist()
+    t["optim"]["max_nb_epochs"] = 3000
+    t['model'] = {
+        'name': 'fully_connected',
+        'params':{
+            'nb_hidden_units': [1000, 2000],
+            'activations': ['relu', {'name': 'winner_take_all_fc', 'params': {'zero_ratio': 0.85}}],
+            'output_activation': 'sigmoid',
+         }
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'binary_threshold',
+            'params': {
+                'one_ratio': 0.15,
+                'is_moving': True,
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
+
+
 
 def mnist_dcgan():
     # reduce size of space to 1 in the bottleneck
@@ -1252,5 +1303,55 @@ def shoes_discrete2():
         'decode_activations': ['relu'] * 4,
         'output_filter_size': 5,
         'output_activation': {'name': 'axis_softmax', 'params': {'axis': 1}},
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'onehot',
+            'params': {
+                'axis': 1
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+
+    return t, g 
+
+
+def mnist_discrete():
+    t, g = cifar_discrete()
+    t['data']['train']['pipeline'][0]['params']['filename'] = '../data/digits.npz'
+    t['data']['transformers'] = [
+        {'name': 'ColorDiscretizer', 'params': {'nb_centers': 3}}
+    ]
+    t['model']['params']['code_activations'] = [
+        {'name': 'winner_take_all_spatial', 'params': {}},
+        {'name': 'winner_take_all_channel', 'params': {'stride': 4}},
+    ]
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'onehot',
+            'params': {
+                'axis': 1
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
     }
     return t, g 

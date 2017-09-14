@@ -63,6 +63,8 @@ def _evaluate(folders):
     htrue_letters = enc.predict(Xtrue_letters)
     rows = [] 
     for folder in folders:
+        if not os.path.exists(os.path.join(folder, 'model.h5')):
+            continue
         print(folder)
         col = OrderedDict()
         name = os.path.basename(folder)
