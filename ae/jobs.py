@@ -190,7 +190,7 @@ def mnist_capacity(rng):
     t, g = mnist()
     t['report']['outdir'] = ''
     g['model']['folder'] = ''
-    g['method']['save_folder'] =''
+    g['method']['save_folder'] = ''
     t['model'] = {
         'name': 'convolutional_bottleneck',
         'params':{
@@ -199,6 +199,7 @@ def mnist_capacity(rng):
             'encode_filter_sizes': [5] * nb,
             'encode_activations': ['relu'] * nb,
             'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
             ],
             'decode_nb_filters': [128] * (nb - 1),
             'decode_filter_sizes': [5] * (nb - 1),
