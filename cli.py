@@ -26,8 +26,12 @@ from lightjob.cli import load_db
 
 def evaluate(*, out='jobs.csv'):
     db = load_db('ae/.lightjob')
-    dirname = os.path.join('ae', 'results', 'jobs')
-    folders = os.listdir(dirname)
+    folders = []
+    for j in db.jobs_with(state='success'):
+        if 'stats' not in j or j['stats'] is None:
+            dirname = os.path.join('ae', 'results', 'jobs', j['summary'])
+            folders.append(dirname)
+    print(folders)
     folders = [os.path.join(dirname, folder) for folder in folders]
     df = _evaluate(folders)
     for i in range(len(df)):

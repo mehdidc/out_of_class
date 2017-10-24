@@ -184,8 +184,7 @@ def mnist_deep_kchannel(rng):
     return t, g
 
 def mnist_capacity(rng):
-    #nb = int(rng.choice((1, 2, 3, 4, 5, 6)))
-    nb = 3
+    nb = int(rng.choice((1, 2, 3, 4, 5, 6)))
     bottleneck = int(rng.choice((64, 32, 16, 8, 4, 2)))
     t, g = mnist()
     t['report']['outdir'] = ''
