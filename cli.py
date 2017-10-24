@@ -27,12 +27,10 @@ from lightjob.cli import load_db
 def evaluate(*, out='jobs.csv'):
     db = load_db('ae/.lightjob')
     folders = []
-    for j in db.jobs_with(state='success'):
+    for j in db.jobs_with():
         if 'stats' not in j or j['stats'] is None:
             dirname = os.path.join('ae', 'results', 'jobs', j['summary'])
             folders.append(dirname)
-    print(folders)
-    folders = [os.path.join(dirname, folder) for folder in folders]
     df = _evaluate(folders)
     for i in range(len(df)):
         r = df.iloc[i]
@@ -40,6 +38,7 @@ def evaluate(*, out='jobs.csv'):
         stats = r.drop('name').to_dict()
         for k, v in stats.items():
             stats[k] = float(v)
+        print(stats)
         db.job_update(name, {'stats': stats})
 
 
@@ -67,9 +66,9 @@ def _evaluate(folders):
     htrue_letters = enc.predict(Xtrue_letters)
     rows = [] 
     for folder in folders:
+        print(folder)
         if not os.path.exists(os.path.join(folder, 'model.h5')):
             continue
-        print(folder)
         col = OrderedDict()
         name = os.path.basename(folder)
         col['name'] = name
