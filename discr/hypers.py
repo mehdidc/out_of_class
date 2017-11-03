@@ -124,7 +124,6 @@ def digits_and_letters_balanced():
 
 
 
-
 def letters():
     params = basic_params.copy()
     train_file = "../data/letters.npz"
@@ -270,6 +269,82 @@ def digits_and_hwrt():
         'test': {
             'pipeline':[
                 {"name": "load_numpy", "params": {"filename": train_file, "start": nb_train + nb_valid, "cols": ["X", "y"]}},
+                {"name": "divide_by", "params": {"value": 255.}},
+                {"name": "onehot", "params": {"nb_classes": nb_classes}},
+            ]
+        },
+        'transformers':[
+        ]
+    }
+    return params
+
+def real_vs_fake():
+    params = basic_params.copy()
+    train_file = "../data/real_vs_fake.npz"
+    nb = len(np.load(train_file)['y'])
+    nb_train = int(0.8 * nb)
+    nb_valid = int(0.1 * nb)
+    nb_test = nb - nb_train - nb_valid
+    nb_classes = 2
+    params['report']['outdir'] = 'real_vs_fake'
+    params['data'] = {
+        'train': {
+            'pipeline':[
+                {"name": "load_numpy", "params": {"filename": train_file, "start": 0, "nb": nb_train, "cols": ["X", "y"]}},
+                #{"name": "divide_by", "params": {"value": 255.}},
+                {"name": "onehot", "params": {"nb_classes": nb_classes}},
+
+            ]
+        },
+        'valid': {
+            'pipeline':[
+                {"name": "load_numpy", "params": {"filename": train_file, "start": nb_train, "nb": nb_valid, "cols": ["X", "y"]}},
+                #{"name": "divide_by", "params": {"value": 255.}},
+                {"name": "onehot", "params": {"nb_classes": nb_classes}},
+            ]
+        },
+        'test': {
+            'pipeline':[
+                {"name": "load_numpy", "params": {"filename": train_file, "start": nb_train + nb_valid, "nb": nb_test, "cols": ["X", "y"]}},
+                #{"name": "divide_by", "params": {"value": 255.}},
+                {"name": "onehot", "params": {"nb_classes": nb_classes}},
+            ]
+        },
+        'transformers':[
+        ]
+    }
+    return params
+
+
+def emnist():
+    params = basic_params.copy()
+    train_file = '../data/emnist_train.npz'
+    test_file = '../data/emnist_test.npz'
+    test = np.load(test_file)
+    nb_classes = len(set(test['y']))
+    nb = len(test['X'])
+    nb_valid = int(nb * 0.1)
+    nb_test = nb - nb_valid
+    params['report']['outdir'] = 'emnist'
+    params['data'] = {
+        'train': {
+            'pipeline':[
+                {"name": "load_numpy", "params": {"filename": train_file, "cols": ["X", "y"]}},
+                {"name": "divide_by", "params": {"value": 255.}},
+                {"name": "onehot", "params": {"nb_classes": nb_classes}},
+
+            ]
+        },
+        'valid': {
+            'pipeline':[
+                {"name": "load_numpy", "params": {"filename": test_file, "start": 0, "nb": nb_valid, "cols": ["X", "y"]}},
+                {"name": "divide_by", "params": {"value": 255.}},
+                {"name": "onehot", "params": {"nb_classes": nb_classes}},
+            ]
+        },
+        'test': {
+            'pipeline':[
+                {"name": "load_numpy", "params": {"filename": test_file, "start": nb_valid, "nb": nb_test, "cols": ["X", "y"]}},
                 {"name": "divide_by", "params": {"value": 255.}},
                 {"name": "onehot", "params": {"nb_classes": nb_classes}},
             ]
