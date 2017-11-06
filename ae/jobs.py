@@ -225,3 +225,54 @@ def mnist_capacity(rng):
         'seed': 42,
     }
     return t, g
+
+
+def mnist_noise(rng):
+    stride = 4
+    nb = int(rng.choice((1, 2, 3, 4, 5, 6)))
+    proba = rng.choice((0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9))
+    proba = float(proba)
+    t, g = mnist()
+    t['report']['outdir'] = ''
+    g['model']['folder'] = ''
+    g['method']['save_folder'] =''
+    model = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [128] * nb,
+            'encode_filter_sizes': [5] * nb,
+            'encode_activations': ['relu'] * nb,
+            'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
+                {'name': 'winner_take_all_channel', 'params': {'stride': stride}},
+            ],
+            'decode_nb_filters': [128] * (nb - 1),
+            'decode_filter_sizes': [5] * (nb - 1),
+            'decode_activations': ['relu'] * (nb - 1),
+            'output_filter_size': 5,
+            'output_activation': 'sigmoid'
+         }
+    }
+    t['model'] = [
+        {'name': 'noise', 'params':{'type': 'salt_and_pepper', 'params':{'proba': proba}}},
+        model
+    ]
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 1000,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
