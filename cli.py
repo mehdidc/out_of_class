@@ -126,27 +126,61 @@ def _evaluate(folders):
     return pd.DataFrame(rows)
 
 
-def ppgn(*, generator='mnist', discriminator='digits_and_letters', layer_name='dense_2', 
-         unit_id=0, nb_iter=100, nb_samples=9, eps1=1., eps2=1., eps3=0., out='out.png'):
-
+def ppgn(*, generator='mnist', discriminator='digits_and_letters', layer_name='output', 
+         unit_id='0', nb_iter=500, nb_samples=1, eps1=1., eps2=1.0, eps3=0., out='out.png',
+         discr_loss='log_proba'):
+   
     ae = load('ae/results/{}'.format(generator))
     discr = load('discr/{}'.format(discriminator))
-    discr.summary()
+
+    if unit_id == 'all':
+        nb_classes = discr.output_shape[1]
+        unit_id = np.arange(nb_classes)
+    else:
+        unit_id = unit_id.split(',')
+        unit_id  = map(int, unit_id)
+        unit_id = list(unit_id)
+        unit_id = np.array(unit_id)
+
     x = discr.layers[0].input
+    xo = x
+    x = ae(x)
     y = discr(x)
-    loss = y[:, unit_id].mean()
-    grad = K.gradients(loss, x)
-    get_grad = K.function([x, K.learning_phase()], grad)
+    if discr_loss == 'log_proba':
+        loss = K.log(y[:, unit_id] + 1e-5).mean()
+    elif discr_loss == 'objectness':
+        loss = _objectness(y)
+
+    grad = K.gradients(loss, xo)
+    get_grad = K.function([xo, K.learning_phase()], grad)
     shape = ae.input_shape[1:]
-    X = np.random.uniform(size=(nb_samples,) + shape)
+    X = np.random.uniform(0, 1, size=(nb_samples,) + shape)
     X = X.astype('float32')
-    for _ in range(nb_iter):
-        rec = (ae.predict(X) - X)
-        X += (eps1 / (len(X))) * rec + eps2 * get_grad([X, 0]) + eps3 * np.random.normal(0, 1, size=X.shape)
+    Xlist = []
+    for i in range(nb_iter):
+        Xn = X + eps3 * np.random.normal(0, 1, size=X.shape)
+        rec = (ae.predict(Xn) - Xn) / len(Xn)
+        X += eps1 * rec + eps2 * get_grad([X, 0])
         np.clip(X, 0, 1)
-        print('confidence : {:.2f}, reconstruction : {:.4f}'.format(discr.predict(X)[:, unit_id].mean(), (rec**2).mean()))
-    im = grid_of_images_default(X)
-    imsave(out, im)
+        pr = discr.predict(X)
+        objectness = compute_objectness(pr)
+        confidence = pr[:, unit_id].mean()
+        reconstruction = (rec**2).mean()
+        print('confidence : {:.3f}, reconstruction : {:.4f}, objectness : {:.4f}'.format(confidence, reconstruction, objectness))
+        Xlist.append(X.copy())
+        if i % 10 == 0:
+            im = np.array(Xlist)
+            shape = im.shape[0], im.shape[1]
+            im = im.reshape((im.shape[0] * im.shape[1], im.shape[2], im.shape[3], im.shape[4]))
+            im = grid_of_images_default(im, shape=shape)
+            imsave(out, im)
+
+
+def _objectness(pr):
+    marginal = pr.mean(axis=0, keepdims=True)
+    score = pr * K.log((pr / marginal) + 1e-10)
+    score = score.sum(axis=1)
+    return score.mean()
 
 
 def extract(*, generator='mnist', discriminator='letters', classes=None, out='extracted.png', nb=10):
