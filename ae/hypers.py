@@ -137,6 +137,30 @@ def iccc():
     return t, g 
 
 
+def fcsa_out():
+    t, g = mnist_basic()
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'binary_threshold',
+            'params': {
+                'one_ratio': 0.13,
+                'is_moving': True,
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
+
+
 def mnist():
     t = basic_train_params.copy()
     g = basic_generate_params.copy()
