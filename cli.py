@@ -7,7 +7,6 @@ from collections import OrderedDict
 import keras.backend as K
 
 from skimage.io import imsave
-import pandas as pd
 import numpy as np
 
 from keras.models import Model
@@ -26,6 +25,25 @@ from metrics import compute_normalized_diversity
 from lightjob.cli import load_db
 
 load = lru_cache(maxsize=None)(load)
+np.load = lru_cache(maxsize=None)(np.load)
+
+
+def _recons(folder):
+    model = load(folder)
+    datasets = ['hwrt_padded']
+    xl = []
+    theta = 50
+    nb = 10000
+    for ds in datasets:
+        data = np.load('data/{}.npz'.format(ds))
+        X = data['X'][0:nb] / 255.0
+        xl.append(X)
+    X = np.concatenate(xl, axis=0)
+    Xr = model.predict(X)
+    err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
+    print(err)
+    return {'recons': err}
+
 
 def _ratio_unique(folder):
     filename = '{}/gen/generated.npz'.format(folder)
@@ -122,6 +140,7 @@ def _metrics(folder):
 eval_funcs = {
     'ratio_unique': _ratio_unique,
     'metrics': _metrics,
+    'recons': _recons
 }
 
 def evaluate(*, force=False, name=None):
