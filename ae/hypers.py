@@ -166,6 +166,13 @@ def mnist():
     g = basic_generate_params.copy()
     return t, g
 
+def mnist5():
+    t = basic_train_params.copy()
+    g = basic_generate_params.copy()
+    g['method']['params']['nb_samples'] = 10000
+    return t, g
+
+
 
 def mnist_without_sparsity():
     t, g = mnist()
