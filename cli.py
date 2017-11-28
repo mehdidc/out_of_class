@@ -44,12 +44,8 @@ def _recons(folder, stats):
         X = data['X'][0:nb] / 255.0
         xl.append(X)
     X = np.concatenate(xl, axis=0)
-    try:
-        Xr = model.predict(X)
-    except Exception:
-        err = 'nan'
-    else:
-        err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
+    Xr = model.predict(X)
+    err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
     print(err)
     return {'recons': err}
 
