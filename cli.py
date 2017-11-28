@@ -28,14 +28,28 @@ load = lru_cache(maxsize=None)(load)
 np.load = lru_cache(maxsize=None)(np.load)
 
 
-def _recons(folder, stats):
-    """
-    if 'recons' in stats:
-        print('skip')
-        return {}
-    """
+def _attractor(folder, stats):
     model = load(folder)
-    datasets = ['hwrt_padded']
+    datasets = ['hwrt_thin']
+    xl = []
+    nb = 10000
+    for ds in datasets:
+        data = np.load('data/{}.npz'.format(ds))
+        X = data['X'][0:nb] / 255.0
+        xl.append(X)
+    X = np.concatenate(xl, axis=0)
+    Xr = X
+    theta = 50
+    for _ in range(30):
+        Xr = model.predict(Xr)
+    err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
+    print(err)
+    return {'attractor': err}
+
+
+def _recons(folder, stats):
+    model = load(folder)
+    datasets = ['hwrt_thin']
     xl = []
     theta = 50 
     nb = 10000
@@ -145,7 +159,8 @@ def _metrics(folder, stast):
 eval_funcs = {
     'ratio_unique': _ratio_unique,
     'metrics': _metrics,
-    'recons': _recons
+    'recons': _recons,
+    'attractor': _attractor,
 }
 
 def evaluate(*, force=False, name=None):
