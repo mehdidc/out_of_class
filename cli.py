@@ -28,24 +28,33 @@ load = lru_cache(maxsize=None)(load)
 np.load = lru_cache(maxsize=None)(np.load)
 
 
-def _recons(folder):
+def _recons(folder, stats):
+    """
+    if 'recons' in stats:
+        print('skip')
+        return {}
+    """
     model = load(folder)
     datasets = ['hwrt_padded']
     xl = []
-    theta = 50
+    theta = 50 
     nb = 10000
     for ds in datasets:
         data = np.load('data/{}.npz'.format(ds))
         X = data['X'][0:nb] / 255.0
         xl.append(X)
     X = np.concatenate(xl, axis=0)
-    Xr = model.predict(X)
-    err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
+    try:
+        Xr = model.predict(X)
+    except Exception:
+        err = 'nan'
+    else:
+        err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
     print(err)
     return {'recons': err}
 
 
-def _ratio_unique(folder):
+def _ratio_unique(folder, stats):
     filename = '{}/gen/generated.npz'.format(folder)
     if not os.path.exists(filename):
         return {}
@@ -56,7 +65,7 @@ def _ratio_unique(folder):
     ratio = len(set(X)) / len(X)
     return {'ratio_unique': ratio}
 
-def _metrics(folder):
+def _metrics(folder, stast):
     nb = 1000
     theta = 0.9
     digits = np.arange(0, 10)
@@ -160,10 +169,10 @@ def evaluate(*, force=False, name=None):
             funcs = eval_funcs.items()
         else:
             funcs = (name, eval_funcs[name]),
-    
+        stats_orig = stats.copy() 
         for name, func in funcs:
             print('Eval of {:<16} on {}'.format(name, j['summary']))
-            st = func(folder)
+            st = func(folder, stats_orig)
             stats.update(st)
         for k, v in stats.items():
             stats[k] = float(v)
