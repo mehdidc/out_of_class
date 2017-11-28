@@ -140,8 +140,8 @@ def mnist_deep_lifetime(rng):
 
 def mnist_deep_kchannel(rng):
     nb = int(rng.choice((1, 2, 3, 4, 5, 6)))
-    #zero_ratio = rng.choice((0.2, 0.4, 0.7, 0.9))
-    zero_ratio = rng.choice((0.9, 0.7))
+    zero_ratio = rng.choice((0.1, 0.2, 0.4, 0.5, 0.7, 0.9))
+    #zero_ratio = rng.choice((0.9, 0.7))
     t, g = mnist()
     t['report']['outdir'] = ''
     g['model']['folder'] = ''
