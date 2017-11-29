@@ -148,6 +148,7 @@ eval_funcs = {
     'recons_ratio': _recons_ratio,
 }
 
+
 def evaluate(*, force=False, name=None):
     db = load_db('ae/.lightjob')
     folders = []
@@ -200,11 +201,19 @@ def extract(*, generator='mnist', discriminator='letters', classes=None, out='ex
 
 
 
-def ppgn(*, generator='mnist', discriminator='digits_and_letters', layer_name='output', 
-         unit_id='0', nb_iter=500, nb_samples=1, eps1=1., eps2=1.0, eps3=0., 
-         out='out.png',
-         out_npz='gen.npz',
-         discr_loss='log_proba'):
+def condgen(*, 
+            generator='mnist', 
+            discriminator='digits_and_letters', 
+            layer_name='output', 
+            unit_id='0', 
+            nb_iter=500, 
+            nb_samples=1, 
+            eps1=1., 
+            eps2=1.0, 
+            eps3=0., 
+            out='out.png',
+            out_npz='gen.npz',
+            discr_loss='log_proba'):
    
     ae = load('ae/results/{}'.format(generator))
     discr = load('discr/{}'.format(discriminator))
@@ -252,6 +261,7 @@ def ppgn(*, generator='mnist', discriminator='digits_and_letters', layer_name='o
     Xfull = np.array(Xlist)
     np.savez(out_npz, X=Xfull)
 
+
 def _objectness(pr):
     marginal = pr.mean(axis=0, keepdims=True)
     score = pr * K.log((pr / marginal) + 1e-10)
@@ -274,5 +284,6 @@ def sanity():
             del stats['recons']
         db.job_update(j['summary'], {'stats': stats})
 
+
 if __name__ == '__main__':
-    run([evaluate, ppgn, extract, sanity])
+    run([evaluate, condgen, extract, sanity])
