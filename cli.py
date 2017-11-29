@@ -160,9 +160,13 @@ eval_funcs = {
 }
 
 
-def evaluate(*, force=False, name=None):
+def evaluate(*, force=False, name=None, job=None):
     db = load_db('ae/.lightjob')
-    for j in db.all_jobs():
+    if job is not None:
+        jobs = db.jobs_with(summary=job)
+    else:
+        jobs = db.all_jobs()
+    for j in jobs:
         folder = os.path.join('ae', 'results', 'jobs', j['summary'])
         stats = {}
         if j.get('stats') is not None:
