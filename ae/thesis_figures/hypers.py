@@ -14,9 +14,9 @@ def get_df():
             if type(v) is dict:
                 for kk, v in v.items():
                     col[k+'_'+kk] = v
+                    col[kk] = v
             else:
                 col[k] = v
-            
         try:
             col['stride'] = j['content']['train']['model']['params']['code_activations'][1]['params']['stride']
         except Exception:

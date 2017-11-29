@@ -62,6 +62,11 @@ def _ratio_unique(folder, **kw):
 
 
 def _metrics(folder, **kw):
+    stat = kw['stats'].get('metrics', {})
+    force = kw['force']
+    if len(stat) and not force:
+        print('skip')
+        return {}
     nb = 1000
     theta = 0.9
     digits = np.arange(0, 10)
@@ -140,7 +145,7 @@ def _metrics(folder, **kw):
 
     col['letters_frechet'] = abs(compute_frechet(h, htrue_letters))
     col['letters_mmd'] = compute_mmd(h, htrue_letters)
-    return col
+    return {'metrics': col}
 
 eval_funcs = {
     'ratio_unique': _ratio_unique,
@@ -282,6 +287,16 @@ def sanity():
         if 'recons' in stats:
             stats['recons_ratio'] = stats['recons']
             del stats['recons']
+        cols = {}
+        for k, v in stats.items():
+            if ('count' in k) or ('objectness' in k) or ('emnist' in k) or ('max' in k) or ('entropy' in k) or ('mmd' in k) or ('frechet' in k) or ('diversity' in k):
+                cols[k] = v
+        for k in cols.keys():
+            del stats[k]
+        if len(cols):
+            stats['metrics'].update(cols)
+        if 'hwrt' in stats:
+            del stats['hwrt']
         db.job_update(j['summary'], {'stats': stats})
 
 

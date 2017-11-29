@@ -103,7 +103,7 @@ def fig5():
     d = df
     d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_deep_kchannel']
-    _fig(d, 'zero_ratio', 'Sparsity rate', 'sparsity_rec_ratio.png', ascending=True)
+    _fig(d, 'zero_ratio', r'Sparsity rate $\rho$', 'sparsity_rec_ratio.png', ascending=True)
 
     # Noise
     d = df
@@ -120,24 +120,32 @@ def fig5():
     print(a, b)
     d = d.append(pd.DataFrame({'noise': [0.0], 'recons_digits': [a], 'recons_hwrt_thin': [b]}))
     """
-    _fig(d, 'noise', 'Salt-and-pepper noise probability', 'noise_rec_ratio.png', ascending=True)
+    _fig(d, 'noise', r'Salt and pepper corruption probability $p_{corruption}$', 'noise_rec_ratio.png', ascending=True)
+
+    # nb layers
+    d = df
+    d = d[d['sampler']  == 'mnist_deep']
+    d = d[d['stride']==0]
+    _fig(d, 'nb_layers', 'Number of layers', 'nb_layers_rec_ratio.png', ascending=True)
 
 
 def _fig(d, col, xlabel, out, ascending=False):
     d = d.copy()
-    d['rec_ratio_in'] = d['recons_digits']
-    d['rec_ratio_out'] = d['recons_hwrt_thin']
+    yin = 'recons_ratio_digits_test'
+    yout = 'recons_ratio_hwrt_thin'
+    d['rec_ratio_in'] = d[yin]
+    d['rec_ratio_out'] = d[yout]
     r = []
     for i in range(len(d)):
         vals = d.iloc[i]
         cols = {}
         cols[col] = vals[col]
-        cols['rec_ratio'] = vals['recons_digits']
+        cols['rec_ratio'] = vals[yin]
         cols['type'] = 'in'
         r.append(cols)
         cols = {}
-        cols[col] = vals['bottleneck']
-        cols['rec_ratio'] = vals['recons_hwrt_thin']
+        cols[col] = vals[col]
+        cols['rec_ratio'] = vals[yout]
         cols['type'] = 'out'
         r.append(cols)
     dd = pd.DataFrame(r)
