@@ -61,7 +61,7 @@ def fig2():
     f = np.concatenate(f, axis=0)
     print(f.shape)
     im = grid_of_images_default(f, normalize=False, shape=(len(f), 1))
-    imsave('features_example.png', im)
+    imsave('features_example_raw.png', im)
 
 
 def fig3():
