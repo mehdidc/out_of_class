@@ -58,6 +58,7 @@ def _ratio_unique(folder, **kw):
     X = X.astype('int32')
     X = [tuple(x.flatten().tolist()) for x in X]
     ratio = len(set(X)) / len(X)
+    ratio = float(ratio)
     return {'ratio_unique': ratio}
 
 
@@ -145,6 +146,8 @@ def _metrics(folder, **kw):
 
     col['letters_frechet'] = abs(compute_frechet(h, htrue_letters))
     col['letters_mmd'] = compute_mmd(h, htrue_letters)
+    for k, v in col.items():
+        col[k] = float(v)
     return {'metrics': col}
 
 eval_funcs = {
@@ -175,9 +178,6 @@ def evaluate(*, force=False, name=None):
             print('Eval of {:<16} on {}'.format(name, j['summary']))
             st = func(folder, stats=stats_orig, force=force)
             stats.update(st)
-        for k, v in stats.items():
-            if type(v) != dict and type(v) != list:
-                stats[k] = float(v)
         db.job_update(j['summary'], {'stats': stats})
 
 
