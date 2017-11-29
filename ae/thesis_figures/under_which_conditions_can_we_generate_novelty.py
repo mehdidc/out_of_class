@@ -90,40 +90,52 @@ def fig4():
     imsave('reconstructions_hwrt_dae_iter.png', im)
 
 def fig5():
+
+    # Bottleneck
+
     d = df
     d = d[d['nb_layers']==3]
     d = d[d['sampler']  == 'mnist_capacity']
     d['bottleneck'] = d['bottleneck'].astype(int)
+    _fig(d, 'bottleneck', 'Bottleneck size', 'bottleneck_rec_ratio.png', ascending=True)
+    
+    # Sparsity
+    d = df
+    d = d[d['nb_layers']==3]
+    d = d[d['sampler']  == 'mnist_deep_kchannel']
+    _fig(d, 'zero_ratio', 'Sparsity rate', 'sparsity_rec_ratio.png', ascending=False)
+
+
+
+def _fig(d, col, xlabel, out, ascending=False):
+    d = d.copy()
     d['rec_ratio_in'] = d['recons_digits']
     d['rec_ratio_out'] = d['recons_hwrt_thin']
-
     r = []
     for i in range(len(d)):
         vals = d.iloc[i]
         cols = {}
-        cols['bottleneck'] = vals['bottleneck']
+        cols[col] = vals[col]
         cols['rec_ratio'] = vals['recons_digits']
         cols['type'] = 'in'
         r.append(cols)
-
         cols = {}
-        cols['bottleneck'] = vals['bottleneck']
+        cols[col] = vals['bottleneck']
         cols['rec_ratio'] = vals['recons_hwrt_thin']
         cols['type'] = 'out'
         r.append(cols)
     dd = pd.DataFrame(r)
-    d = d.sort_values(by='bottleneck', ascending=False)
+    d = d.sort_values(by=col, ascending=ascending)
     fig = plt.figure(figsize=(10, 5))
     ax = sns.barplot(
-        x='bottleneck', 
+        x=col, 
         y='rec_ratio', 
         hue='type',
         data=dd, 
-        edgecolor=['black'] * 5,
+        edgecolor=['black'] * len(d),
         linewidth=2,
-        order=d['bottleneck'].values,
+        order=d[col].values,
     )
-
     for c in ax.get_children():
         if hasattr(c, 'get_width'):
             width = c.get_width()
@@ -134,23 +146,10 @@ def fig5():
     plt.scatter(ax.get_xticks()-width/2, d['rec_ratio_in'], zorder=2, color='blue', label='_nolegend_', s=s)
     plt.plot(ax.get_xticks()+width-width/2, d['rec_ratio_out'], zorder=2, color='green', label='_nolegend_', linestyle=ls)
     plt.scatter(ax.get_xticks()+width-width/2, d['rec_ratio_out'], zorder=2, color='green', label='_nolegend_',s=s)
-
-    """
-    plt.xticks([4 * d for d in range(17)])
-    for i in range(len(d)):
-        k= d.iloc[i]['bottleneck']        
-        plt.axvline(x=k, ymin=0, ymax=1, linestyle='dotted', color='lightgray', zorder=-1)
-    plt.scatter(d['bottleneck'], d['rec_ratio_in'], c='green', label=None)
-    plt.plot(d['bottleneck'], d['rec_ratio_in'], c='green', label='recRatio($D_{in}$)')
-    
-    plt.scatter(d['bottleneck'], d['rec_ratio_out'], c='blue', label=None)
-    plt.plot(d['bottleneck'], d['rec_ratio_out'], c='blue', label='recRatio($D_{out}$)')
-    """
-
-    plt.xlabel('Bottleneck size')
+    plt.xlabel(xlabel)
     plt.ylabel('recRatio($\cdot$)')
     plt.legend()
-    plt.savefig('bottleneck_rec_ratio.png')
+    plt.savefig(out)
     plt.close(fig)
 
 #fig1()
