@@ -287,7 +287,7 @@ def sanity():
             del stats['recons']
         cols = {}
         for k, v in stats.items():
-            if ('count' in k) or ('objectness' in k) or ('emnist' in k) or ('max' in k) or ('entropy' in k) or ('mmd' in k) or ('frechet' in k) or ('diversity' in k):
+            if ('count' in k) or ('objectness' in k) or ('emnist' in k) or ('max' in k) or ('entropy' in k) or ('mmd' in k) or ('frechet' in k) or ('diversity' in k) or ('entropy' in k):
                 cols[k] = v
         for k in cols.keys():
             del stats[k]

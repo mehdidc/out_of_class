@@ -128,6 +128,12 @@ def fig5():
     d = d[d['stride']==0]
     _fig(d, 'nb_layers', 'Number of layers', 'nb_layers_rec_ratio.png', ascending=True)
 
+def fig6():
+    data = np.load('../results/jobs/f316dedd30ebc5f51c4678f07979436c/gen/generated.npz')
+    X = data['generated']
+    X = X[0:100]
+    im = grid_of_images_default(X)
+    imsave('out_of_class_generator.png', im)
 
 def _fig(d, col, xlabel, out, ascending=False):
     d = d.copy()
@@ -180,4 +186,5 @@ def _fig(d, col, xlabel, out, ascending=False):
 #fig2()
 #fig3()
 #fig4()
-fig5()
+#fig5()
+fig6()
