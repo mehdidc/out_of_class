@@ -27,29 +27,15 @@ from lightjob.cli import load_db
 load = lru_cache(maxsize=None)(load)
 np.load = lru_cache(maxsize=None)(np.load)
 
+def _recons_ratio(folder, **kw):
+    stat = kw['stats'].get('recons_ratio', {})
+    force = kw['force']
 
-def _attractor(folder):
-    model = load(folder)
-    datasets = ['hwrt_thin']
-    xl = []
-    nb = 1000
-    for ds in datasets:
-        data = np.load('data/{}.npz'.format(ds))
-        X = data['X'][0:nb] / 255.0
-        xl.append(X)
-    X = np.concatenate(xl, axis=0)
-    Xr = X
-    theta = 100
-    for _ in range(30):
-        Xr = model.predict(Xr)
-    err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
-    print(err)
-    return {'attractor': err}
-
-
-def _recons_ratio(folder):
     model = load(folder)
     datasets = ['hwrt_thin', 'digits', 'digits_test']
+    if all([d in stat for d in datasets]) and not force:
+        print('skip')
+        return
     theta = 50 
     nb = 10000
     out = {}
@@ -64,7 +50,7 @@ def _recons_ratio(folder):
     return {'recons': out}
 
 
-def _ratio_unique(folder):
+def _ratio_unique(folder, **kw):
     filename = '{}/gen/generated.npz'.format(folder)
     if not os.path.exists(filename):
         return {}
@@ -76,7 +62,7 @@ def _ratio_unique(folder):
     return {'ratio_unique': ratio}
 
 
-def _metrics(folder, stast):
+def _metrics(folder, **kw):
     nb = 1000
     theta = 0.9
     digits = np.arange(0, 10)
@@ -161,7 +147,6 @@ eval_funcs = {
     'ratio_unique': _ratio_unique,
     'metrics': _metrics,
     'recons_ratio': _recons_ratio,
-    'attractor': _attractor,
 }
 
 def evaluate(*, force=False, name=None):
@@ -181,10 +166,10 @@ def evaluate(*, force=False, name=None):
             funcs = eval_funcs.items()
         else:
             funcs = (name, eval_funcs[name]),
-        #stats_orig = stats.copy() 
+        stats_orig = stats.copy() 
         for name, func in funcs:
             print('Eval of {:<16} on {}'.format(name, j['summary']))
-            st = func(folder)
+            st = func(folder, stats=stats_orig, force=force)
             stats.update(st)
         for k, v in stats.items():
             if type(v) != dict and type(v) != list:

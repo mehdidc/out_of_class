@@ -109,7 +109,7 @@ def fig5():
     d = df
     d = d[d['sampler']  == 'mnist_noise']
     d = d[d['nb_layers']==nb_layers]
-    
+    """
     m = df
     m = m[m['sampler'] == 'mnist_deep']
     m = m[m['stride'] == 0]
@@ -119,6 +119,7 @@ def fig5():
     b = m.iloc[0]['recons_hwrt_thin']
     print(a, b)
     d = d.append(pd.DataFrame({'noise': [0.0], 'recons_digits': [a], 'recons_hwrt_thin': [b]}))
+    """
     _fig(d, 'noise', 'Salt-and-pepper noise probability', 'noise_rec_ratio.png', ascending=True)
 
 
