@@ -33,6 +33,7 @@ def _recons_ratio(folder, **kw):
 
     model = load(folder)
     datasets = ['hwrt_thin', 'digits', 'digits_test']
+    print(stat)
     if all([d in stat for d in datasets]) and not force:
         print('skip')
         return
@@ -154,10 +155,9 @@ def evaluate(*, force=False, name=None):
     folders = []
     jobs = []
     for j in db.jobs_with():
-        if ('stats' not in j or j['stats'] is None) or force:
-            dirname = os.path.join('ae', 'results', 'jobs', j['summary'])
-            jobs.append(j)
-            folders.append(dirname)
+        dirname = os.path.join('ae', 'results', 'jobs', j['summary'])
+        jobs.append(j)
+        folders.append(dirname)
     for j, folder in zip(jobs, folders):
         stats = {}
         if j.get('stats') is not None:
@@ -261,6 +261,20 @@ def _objectness(pr):
     return score.mean()
 
 
+def sanity():
+    db = load_db('ae/.lightjob')
+    jobs = db.all_jobs()
+    for j in jobs:
+        print(j['summary'])
+        stats = {}
+        if j.get('stats') is not None:
+            stats.update(j['stats'])
+        if 'attractor' in stats:
+            del stats['attractor']
+        if 'recons' in stats:
+            stats['recons_ratio'] = stats['recons']
+            del stats['recons']
+        db.job_update(j['summary'], {'stats': stats})
 
 if __name__ == '__main__':
-    run([evaluate, ppgn, extract])
+    run([evaluate, ppgn, extract, sanity])
