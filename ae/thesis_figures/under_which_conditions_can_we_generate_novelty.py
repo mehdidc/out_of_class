@@ -114,15 +114,27 @@ def fig5():
     dd = pd.DataFrame(r)
     d = d.sort_values(by='bottleneck', ascending=False)
     fig = plt.figure(figsize=(10, 5))
-    sns.barplot(
+    ax = sns.barplot(
         x='bottleneck', 
         y='rec_ratio', 
         hue='type',
         data=dd, 
-        edgecolor='black', 
-        linewidth=3,
+        edgecolor=['black'] * 5,
+        linewidth=2,
         order=d['bottleneck'].values,
     )
+
+    for c in ax.get_children():
+        if hasattr(c, 'get_width'):
+            width = c.get_width()
+            break
+    s = 15
+    ls = 'dashed'
+    plt.plot(ax.get_xticks()-width/2, d['rec_ratio_in'], zorder=2, color='blue', label='_nolegend_', linestyle=ls)
+    plt.scatter(ax.get_xticks()-width/2, d['rec_ratio_in'], zorder=2, color='blue', label='_nolegend_', s=s)
+    plt.plot(ax.get_xticks()+width-width/2, d['rec_ratio_out'], zorder=2, color='green', label='_nolegend_', linestyle=ls)
+    plt.scatter(ax.get_xticks()+width-width/2, d['rec_ratio_out'], zorder=2, color='green', label='_nolegend_',s=s)
+
     """
     plt.xticks([4 * d for d in range(17)])
     for i in range(len(d)):
