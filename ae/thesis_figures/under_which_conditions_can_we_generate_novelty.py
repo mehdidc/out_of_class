@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -8,6 +9,8 @@ import keras.backend as K
 from skimage.io import imsave
 from machinedesign.viz import grid_of_images_default
 from hypers import get_df
+
+sns.set_style('white')
 
 digits = np.load('../../data/digits.npz')
 digits = digits['X'] / 255.
@@ -90,20 +93,51 @@ def fig5():
     d = df
     d = d[d['nb_layers']==3]
     d = d[d['sampler']  == 'mnist_capacity']
-    d['Bottleneck'] = d['bottleneck'].astype(int)
-    d['recRatio'] = d['recons_hwrt_thin']
-    d = d.sort_values(by='Bottleneck', ascending=False)
+    d['bottleneck'] = d['bottleneck'].astype(int)
+    d['rec_ratio_in'] = d['recons_digits']
+    d['rec_ratio_out'] = d['recons_hwrt_thin']
+
+    r = []
+    for i in range(len(d)):
+        vals = d.iloc[i]
+        cols = {}
+        cols['bottleneck'] = vals['bottleneck']
+        cols['rec_ratio'] = vals['recons_digits']
+        cols['type'] = 'in'
+        r.append(cols)
+
+        cols = {}
+        cols['bottleneck'] = vals['bottleneck']
+        cols['rec_ratio'] = vals['recons_hwrt_thin']
+        cols['type'] = 'out'
+        r.append(cols)
+    dd = pd.DataFrame(r)
+    d = d.sort_values(by='bottleneck', ascending=False)
     fig = plt.figure(figsize=(10, 5))
     sns.barplot(
-        x='Bottleneck', 
-        y='recRatio', 
-        data=d, 
-        color='blue', 
+        x='bottleneck', 
+        y='rec_ratio', 
+        hue='type',
+        data=dd, 
         edgecolor='black', 
-        linewidth=2, 
-        order=d['Bottleneck'].values,
+        linewidth=3,
+        order=d['bottleneck'].values,
     )
-    plt.ylabel('recRatio($D_{out}}$)')
+    """
+    plt.xticks([4 * d for d in range(17)])
+    for i in range(len(d)):
+        k= d.iloc[i]['bottleneck']        
+        plt.axvline(x=k, ymin=0, ymax=1, linestyle='dotted', color='lightgray', zorder=-1)
+    plt.scatter(d['bottleneck'], d['rec_ratio_in'], c='green', label=None)
+    plt.plot(d['bottleneck'], d['rec_ratio_in'], c='green', label='recRatio($D_{in}$)')
+    
+    plt.scatter(d['bottleneck'], d['rec_ratio_out'], c='blue', label=None)
+    plt.plot(d['bottleneck'], d['rec_ratio_out'], c='blue', label='recRatio($D_{out}$)')
+    """
+
+    plt.xlabel('Bottleneck size')
+    plt.ylabel('recRatio($\cdot$)')
+    plt.legend()
     plt.savefig('bottleneck_rec_ratio.png')
     plt.close(fig)
 

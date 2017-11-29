@@ -28,18 +28,18 @@ load = lru_cache(maxsize=None)(load)
 np.load = lru_cache(maxsize=None)(np.load)
 
 
-def _attractor(folder, stats):
+def _attractor(folder):
     model = load(folder)
     datasets = ['hwrt_thin']
     xl = []
-    nb = 10000
+    nb = 1000
     for ds in datasets:
         data = np.load('data/{}.npz'.format(ds))
         X = data['X'][0:nb] / 255.0
         xl.append(X)
     X = np.concatenate(xl, axis=0)
     Xr = X
-    theta = 50
+    theta = 100
     for _ in range(30):
         Xr = model.predict(Xr)
     err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
@@ -47,24 +47,24 @@ def _attractor(folder, stats):
     return {'attractor': err}
 
 
-def _recons(folder, stats):
+def _recons_ratio(folder):
     model = load(folder)
-    datasets = ['hwrt_thin']
-    xl = []
+    datasets = ['hwrt_thin', 'digits', 'digits_test']
     theta = 50 
     nb = 10000
+    out = {}
     for ds in datasets:
         data = np.load('data/{}.npz'.format(ds))
         X = data['X'][0:nb] / 255.0
-        xl.append(X)
-    X = np.concatenate(xl, axis=0)
-    Xr = model.predict(X)
-    err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
-    print(err)
-    return {'recons': err}
+        Xr = model.predict(X)
+        err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
+        err = float(err)
+        out[ds] = err
+    print(out)
+    return {'recons': out}
 
 
-def _ratio_unique(folder, stats):
+def _ratio_unique(folder):
     filename = '{}/gen/generated.npz'.format(folder)
     if not os.path.exists(filename):
         return {}
@@ -74,6 +74,7 @@ def _ratio_unique(folder, stats):
     X = [tuple(x.flatten().tolist()) for x in X]
     ratio = len(set(X)) / len(X)
     return {'ratio_unique': ratio}
+
 
 def _metrics(folder, stast):
     nb = 1000
@@ -159,7 +160,7 @@ def _metrics(folder, stast):
 eval_funcs = {
     'ratio_unique': _ratio_unique,
     'metrics': _metrics,
-    'recons': _recons,
+    'recons_ratio': _recons_ratio,
     'attractor': _attractor,
 }
 
@@ -180,13 +181,14 @@ def evaluate(*, force=False, name=None):
             funcs = eval_funcs.items()
         else:
             funcs = (name, eval_funcs[name]),
-        stats_orig = stats.copy() 
+        #stats_orig = stats.copy() 
         for name, func in funcs:
             print('Eval of {:<16} on {}'.format(name, j['summary']))
-            st = func(folder, stats_orig)
+            st = func(folder)
             stats.update(st)
         for k, v in stats.items():
-            stats[k] = float(v)
+            if type(v) != dict and type(v) != list:
+                stats[k] = float(v)
         db.job_update(j['summary'], {'stats': stats})
 
 
