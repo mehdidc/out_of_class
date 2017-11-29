@@ -90,21 +90,36 @@ def fig4():
     imsave('reconstructions_hwrt_dae_iter.png', im)
 
 def fig5():
+    nb_layers = 3
 
     # Bottleneck
-
     d = df
-    d = d[d['nb_layers']==3]
+    d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_capacity']
     d['bottleneck'] = d['bottleneck'].astype(int)
-    _fig(d, 'bottleneck', 'Bottleneck size', 'bottleneck_rec_ratio.png', ascending=True)
+    _fig(d, 'bottleneck', 'Bottleneck size', 'bottleneck_rec_ratio.png', ascending=False)
     
     # Sparsity
     d = df
-    d = d[d['nb_layers']==3]
+    d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_deep_kchannel']
-    _fig(d, 'zero_ratio', 'Sparsity rate', 'sparsity_rec_ratio.png', ascending=False)
+    _fig(d, 'zero_ratio', 'Sparsity rate', 'sparsity_rec_ratio.png', ascending=True)
 
+    # Noise
+    d = df
+    d = d[d['sampler']  == 'mnist_noise']
+    d = d[d['nb_layers']==nb_layers]
+    
+    m = df
+    m = m[m['sampler'] == 'mnist_deep']
+    m = m[m['stride'] == 0]
+    m = m[m['nb_layers'] == nb_layers]
+    print(len(m))
+    a = m.iloc[0]['recons_digits']
+    b = m.iloc[0]['recons_hwrt_thin']
+    print(a, b)
+    d = d.append(pd.DataFrame({'noise': [0.0], 'recons_digits': [a], 'recons_hwrt_thin': [b]}))
+    _fig(d, 'noise', 'Salt-and-pepper noise probability', 'noise_rec_ratio.png', ascending=True)
 
 
 def _fig(d, col, xlabel, out, ascending=False):
