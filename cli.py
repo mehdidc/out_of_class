@@ -2,7 +2,6 @@ import os
 
 from clize import run
 from functools import lru_cache
-from collections import OrderedDict
 
 import keras.backend as K
 
@@ -50,6 +49,12 @@ def _recons_ratio(folder, **kw):
 
 
 def _ratio_unique(folder, **kw):
+    stat = kw['stats'].get('recons_ratio', {})
+    force = kw['force']
+    if 'ratio_unique' in stat and not force and stat['ratio_unique'] is not None:
+        print('skip')
+        return {}
+ 
     filename = '{}/gen/generated.npz'.format(folder)
     if not os.path.exists(filename):
         return {}
@@ -96,9 +101,7 @@ def _metrics(folder, **kw):
     if not os.path.exists(os.path.join(folder, 'model.h5')):
         return {}
     print(folder)
-    col = OrderedDict()
-    name = os.path.basename(folder)
-    col['name'] = name
+    col = {}
     model = load(folder)
     col['nb_params'] = model.count_params()
     filename = '{}/gen/generated.npz'.format(folder)
@@ -159,13 +162,8 @@ eval_funcs = {
 
 def evaluate(*, force=False, name=None):
     db = load_db('ae/.lightjob')
-    folders = []
-    jobs = []
-    for j in db.jobs_with():
-        dirname = os.path.join('ae', 'results', 'jobs', j['summary'])
-        jobs.append(j)
-        folders.append(dirname)
-    for j, folder in zip(jobs, folders):
+    for j in db.all_jobs():
+        folder = os.path.join('ae', 'results', 'jobs', j['summary'])
         stats = {}
         if j.get('stats') is not None:
             stats.update(j['stats'])
