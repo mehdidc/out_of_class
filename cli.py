@@ -97,10 +97,8 @@ def _metrics(folder, **kw):
     )
     htrue_digits = enc.predict(Xtrue_digits)
     htrue_letters = enc.predict(Xtrue_letters)
-
     if not os.path.exists(os.path.join(folder, 'model.h5')):
         return {}
-    print(folder)
     col = {}
     model = load(folder)
     col['nb_params'] = model.count_params()
