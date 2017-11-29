@@ -30,16 +30,14 @@ np.load = lru_cache(maxsize=None)(np.load)
 def _recons_ratio(folder, **kw):
     stat = kw['stats'].get('recons_ratio', {})
     force = kw['force']
-
-    model = load(folder)
     datasets = ['hwrt_thin', 'digits', 'digits_test']
-    print(stat)
     if all([d in stat for d in datasets]) and not force:
         print('skip')
-        return
+        return {}
     theta = 50 
     nb = 10000
     out = {}
+    model = load(folder)
     for ds in datasets:
         data = np.load('data/{}.npz'.format(ds))
         X = data['X'][0:nb] / 255.0
