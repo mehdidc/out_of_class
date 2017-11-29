@@ -98,12 +98,14 @@ def _metrics(folder, **kw):
     htrue_digits = enc.predict(Xtrue_digits)
     htrue_letters = enc.predict(Xtrue_letters)
     if not os.path.exists(os.path.join(folder, 'model.h5')):
+        print('model does not exist')
         return {}
     col = {}
     model = load(folder)
     col['nb_params'] = model.count_params()
     filename = '{}/gen/generated.npz'.format(folder)
     if not os.path.exists(filename):
+        print('gen does not exist')
         return {}
     X = np.load(filename)['generated']
     X = X[0:nb]
@@ -178,6 +180,7 @@ def evaluate(*, force=False, name=None, job=None):
             print('Eval of {:<16} on {}'.format(name, j['summary']))
             st = func(folder, stats=stats_orig, force=force)
             stats.update(st)
+        print(stats)
         db.job_update(j['summary'], {'stats': stats})
 
 
