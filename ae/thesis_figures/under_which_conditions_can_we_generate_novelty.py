@@ -118,7 +118,7 @@ def fig5():
     a = m.iloc[0]['recons_digits']
     b = m.iloc[0]['recons_hwrt_thin']
     print(a, b)
-    d = d.append(pd.DataFrame({'noise': [0.0], 'recons_digits': [a], 'recons_hwrt_thin': [b]}))
+    d = d.append(pd.DataFrame({'noise': [0.0], 'recons_digits': [a], 'recons_hwrt': [b]}))
     """
     _fig(d, 'noise', r'Salt and pepper corruption probability $p_{corruption}$', 'noise_rec_ratio.png', ascending=True)
 
@@ -139,8 +139,8 @@ def fig6():
 
 def _fig(d, col, xlabel, out, ascending=False):
     d = d.copy()
-    yin = 'recons_ratio_digits_test'
-    yout = 'recons_ratio_hwrt_thin'
+    yin = 'recons_ratio_digits'
+    yout = 'recons_ratio_hwrt'
     d['rec_ratio_in'] = d[yin]
     d['rec_ratio_out'] = d[yout]
     r = []
