@@ -20,21 +20,22 @@ np.load = lru_cache(maxsize=None)(np.load)
 def _recons_ratio(folder, **kw):
     stat = kw['stats'].get('recons_ratio', {})
     force = kw['force']
-    datasets = ['hwrt_thin', 'digits', 'digits_test']
-    if all([d in stat for d in datasets]) and not force:
+    datasets = ['hwrt_thin', 'digits_test']
+    names = ['hwrt', 'digits']
+    if all([n in stat for n in names]) and not force:
         print('skip')
         return {}
     theta = 50 
     nb = 10000
     out = {}
     model = load(folder)
-    for ds in datasets:
+    for name, ds in zip(names, datasets):
         data = np.load('data/{}.npz'.format(ds))
         X = data['X'][0:nb] / 255.0
         Xr = model.predict(X)
         err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
         err = float(err)
-        out[ds] = err
+        out[name] = err
     print(out)
     return {'recons': out}
 
@@ -178,6 +179,7 @@ def evaluate(*, force=False, name=None, job=None):
 def sanity():
     db = load_db()
     jobs = db.all_jobs()
+    """
     for j in jobs:
         print(j['summary'])
         stats = {}
@@ -198,6 +200,15 @@ def sanity():
             stats['metrics'].update(cols)
         if 'hwrt' in stats:
             del stats['hwrt']
+        db.job_update(j['summary'], {'stats': stats})
+    """
+    for j in jobs:
+        stats = j['stats']
+        stats['recons_ratio']['hwrt'] = stats['recons_ratio']['hwrt_thin']
+        del stats['recons_ratio']['hwrt_thin']
+        stats['recons_ratio']['digits'] = stats['recons_ratio']['digits_test']
+        del stats['recons_ratio']['digits_test']
+        print(stats['recons_ratio'])
         db.job_update(j['summary'], {'stats': stats})
 
 

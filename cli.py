@@ -1,3 +1,4 @@
+import os
 from clize import run
 import keras.backend as K
 from skimage.io import imsave
@@ -6,6 +7,17 @@ from machinedesign.viz import grid_of_images_default
 from machinedesign.autoencoder.interface import load
 from lightjob.cli import load_db
 
+def thumbnails():
+    folders = os.listdir('ae/results/jobs')
+    for folder in folders:
+        print(folder)
+        dirname = os.path.join('ae', 'results', 'jobs', folder)
+        data = np.load(os.path.join(dirname, 'gen', 'generated.npz'))
+        X = data['generated']
+        X = X[0:25]
+        im = grid_of_images_default(X)
+        imsave('export/thumbnails/{}.png'.format(folder), im)
+    
 
 def extract(*, generator='mnist', discriminator='letters', classes=None, out='extracted.png', nb=10):
     data = np.load('ae/results/{}/gen/generated.npz'.format(generator))
@@ -127,4 +139,4 @@ def sanity():
 
 
 if __name__ == '__main__':
-    run([condgen, extract])
+    run([condgen, extract, thumbnails])
