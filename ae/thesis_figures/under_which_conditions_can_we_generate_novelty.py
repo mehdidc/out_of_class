@@ -134,17 +134,18 @@ def fig6():
     im = grid_of_images_default(X)
     imsave('out_of_class_generator.png', im)
     
-    nb_layers = 3
+    #nb_layers = 3
     fig = partial(
         _fig,
         yin='emnist_digits_count',
         yout='emnist_letters_count',
-        ylabel=r'$\text{count}(\cdot)$'
+        ylabel=r'$count(\cdot)$',
+        line=False
     )
     #
     # Bottleneck
     d = df
-    d = d[d['nb_layers']==nb_layers]
+    #d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_capacity']
     d['bottleneck'] = d['bottleneck'].astype(int)
     fig(d, xcol='bottleneck', xlabel='Bottleneck size', out='bottleneck_count.png', 
@@ -152,7 +153,7 @@ def fig6():
     
     # Sparsity
     d = df
-    d = d[d['nb_layers']==nb_layers]
+    #d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_deep_kchannel']
     fig(d, xcol='zero_ratio', xlabel=r'Sparsity rate $\rho$', out='sparsity_count.png', 
         ascending=True)
@@ -160,7 +161,7 @@ def fig6():
     # Noise
     d = df
     d = d[d['sampler']  == 'mnist_noise']
-    d = d[d['nb_layers']==nb_layers]
+    #d = d[d['nb_layers']==nb_layers]
     fig(d, xcol='noise', xlabel=r'Salt and pepper corruption probability $p_{corruption}$', 
         out='noise_count.png', ascending=True)
 
@@ -172,13 +173,10 @@ def fig6():
         ascending=True)
 
 
-def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False):
+def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False, line=True):
     d = d.copy()
-    yin = 'recons_ratio_digits'
-    yout = 'recons_ratio_hwrt'
-    d['rec_ratio_in'] = d[yin]
-    d['rec_ratio_out'] = d[yout]
     r = []
+    d = d.sort_values(by=xcol, ascending=ascending)
     for i in range(len(d)):
         vals = d.iloc[i]
         cols = {}
@@ -192,16 +190,15 @@ def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False):
         cols['type'] = 'out'
         r.append(cols)
     dd = pd.DataFrame(r)
-    d = d.sort_values(by=col, ascending=ascending)
     fig = plt.figure(figsize=(10, 5))
     ax = sns.barplot(
         x='x', 
         y='y',
         hue='type',
         data=dd, 
-        edgecolor=['black'] * len(d),
+        edgecolor=['black'] * len(dd),
         linewidth=2,
-        order=d[col].values,
+        order=d[xcol].unique(),
     )
     for c in ax.get_children():
         if hasattr(c, 'get_width'):
@@ -209,10 +206,15 @@ def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False):
             break
     s = 15
     ls = 'dashed'
-    plt.plot(ax.get_xticks()-width/2, d['yin'], zorder=2, color='blue', label='_nolegend_', linestyle=ls)
-    plt.scatter(ax.get_xticks()-width/2, d['yin'], zorder=2, color='blue', label='_nolegend_', s=s)
-    plt.plot(ax.get_xticks()+width-width/2, d['yout'], zorder=2, color='green', label='_nolegend_', linestyle=ls)
-    plt.scatter(ax.get_xticks()+width-width/2, d['yout'], zorder=2, color='green', label='_nolegend_',s=s)
+    if line:
+        plt.plot(ax.get_xticks()-width/2, d[yin], zorder=2, color='blue', 
+                label='_nolegend_', linestyle=ls)
+        plt.scatter(ax.get_xticks()-width/2, d[yin], zorder=2, color='blue', 
+                    label='_nolegend_', s=s)
+        plt.plot(ax.get_xticks()+width-width/2, d[yout], zorder=2, color='green', 
+                label='_nolegend_', linestyle=ls)
+        plt.scatter(ax.get_xticks()+width-width/2, d[yout], zorder=2, color='green', 
+                    label='_nolegend_',s=s)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.legend()
