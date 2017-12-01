@@ -1,3 +1,4 @@
+from functools import partial
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -91,35 +92,39 @@ def fig4():
 
 def fig5():
     nb_layers = 3
-
+    fig = partial(
+        _fig,
+        yin='recons_ratio_digits',
+        yout='recons_ratio_hwrt',
+        ylabel='recRatio($\cdot$)'
+    )
     # Bottleneck
     d = df
     d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_capacity']
     d['bottleneck'] = d['bottleneck'].astype(int)
-    _fig(d, 'bottleneck', 'recons_ratio_digits', 'recons_ratio_hwrt', 
-         'Bottleneck size', 'bottleneck_rec_ratio.png', ascending=False)
+    fig(d, xcol='bottleneck', xlabel='Bottleneck size', out='bottleneck_rec_ratio.png', 
+        ascending=False)
     
     # Sparsity
     d = df
     d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_deep_kchannel']
-    _fig(d, 'zero_ratio',  'recons_ratio_digits', 'recons_ratio_hwrt',
-         r'Sparsity rate $\rho$', 'sparsity_rec_ratio.png', ascending=True)
+    fig(d, xcol='zero_ratio', xlabel=r'Sparsity rate $\rho$', out='sparsity_rec_ratio.png', 
+         ascending=True)
     # Noise
     d = df
     d = d[d['sampler']  == 'mnist_noise']
     d = d[d['nb_layers']==nb_layers]
-    _fig(d, 'noise', 'recons_ratio_digits', 'recons_ratio_hwrt',
-         r'Salt and pepper corruption probability $p_{corruption}$', 'noise_rec_ratio.png', 
-         ascending=True)
+    fig(d, xcol='noise', xlabel=r'Salt and pepper corruption probability $p_{corruption}$', 
+        out='noise_rec_ratio.png', ascending=True)
 
     # nb layers
     d = df
     d = d[d['sampler']  == 'mnist_deep']
     d = d[d['stride']==0]
-    _fig(d, 'nb_layers', 'emnist_digits_count', 'emnist_letters_count',
-         'Number of layers', 'nb_layers_rec_ratio.png', ascending=True)
+    fig(d, xcol='nb_layers', xlabel='Number of layers', out='nb_layers_rec_ratio.png', 
+        ascending=True)
 
 
 def fig6():
@@ -130,38 +135,44 @@ def fig6():
     imsave('out_of_class_generator.png', im)
     
     nb_layers = 3
+    fig = partial(
+        _fig,
+        yin='emnist_digits_count',
+        yout='emnist_letters_count',
+        ylabel=r'$\text{count}(\cdot)$'
+    )
+    #
     # Bottleneck
     d = df
     d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_capacity']
     d['bottleneck'] = d['bottleneck'].astype(int)
-    _fig(d, 'bottleneck', 'emnist_digits_count', 'emnist_letters_count',
-         'Bottleneck size', 'bottleneck_count.png', ascending=False)
+    fig(d, xcol='bottleneck', xlabel='Bottleneck size', out='bottleneck_count.png', 
+        ascending=False)
     
     # Sparsity
     d = df
     d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_deep_kchannel']
-    _fig(d, 'zero_ratio', 'emnist_digits_count', 'emnist_letters_count',
-          r'Sparsity rate $\rho$', 'sparsity_count.png', ascending=True)
+    fig(d, xcol='zero_ratio', xlabel=r'Sparsity rate $\rho$', out='sparsity_count.png', 
+        ascending=True)
 
     # Noise
     d = df
     d = d[d['sampler']  == 'mnist_noise']
     d = d[d['nb_layers']==nb_layers]
-    _fig(d, 'noise', 'emnist_digits_count', 'emnist_letters_count',
-         r'Salt and pepper corruption probability $p_{corruption}$', 'noise_count.png', 
-         ascending=True)
+    fig(d, xcol='noise', xlabel=r'Salt and pepper corruption probability $p_{corruption}$', 
+        out='noise_count.png', ascending=True)
 
     # nb layers
     d = df
     d = d[d['sampler']  == 'mnist_deep']
     d = d[d['stride']==0]
-    _fig(d, 'nb_layers', 'emnist_digits_count', 'emnist_letters_count',
-         'Number of layers', 'nb_layers_count.png', ascending=True)
+    fig(d, xcol='nb_layers', xlabel='Number of layers', out='nb_layers_count.png', 
+        ascending=True)
 
 
-def _fig(d, col, yin, yout, xlabel, out, ascending=False):
+def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False):
     d = d.copy()
     yin = 'recons_ratio_digits'
     yout = 'recons_ratio_hwrt'
@@ -171,21 +182,21 @@ def _fig(d, col, yin, yout, xlabel, out, ascending=False):
     for i in range(len(d)):
         vals = d.iloc[i]
         cols = {}
-        cols[col] = vals[col]
-        cols['rec_ratio'] = vals[yin]
+        cols['x'] = vals[xcol]
+        cols['y'] = vals[yin]
         cols['type'] = 'in'
         r.append(cols)
         cols = {}
-        cols[col] = vals[col]
-        cols['rec_ratio'] = vals[yout]
+        cols['x'] = vals[xcol]
+        cols['y'] = vals[yout]
         cols['type'] = 'out'
         r.append(cols)
     dd = pd.DataFrame(r)
     d = d.sort_values(by=col, ascending=ascending)
     fig = plt.figure(figsize=(10, 5))
     ax = sns.barplot(
-        x=col, 
-        y='rec_ratio', 
+        x='x', 
+        y='y',
         hue='type',
         data=dd, 
         edgecolor=['black'] * len(d),
@@ -198,12 +209,12 @@ def _fig(d, col, yin, yout, xlabel, out, ascending=False):
             break
     s = 15
     ls = 'dashed'
-    plt.plot(ax.get_xticks()-width/2, d['rec_ratio_in'], zorder=2, color='blue', label='_nolegend_', linestyle=ls)
-    plt.scatter(ax.get_xticks()-width/2, d['rec_ratio_in'], zorder=2, color='blue', label='_nolegend_', s=s)
-    plt.plot(ax.get_xticks()+width-width/2, d['rec_ratio_out'], zorder=2, color='green', label='_nolegend_', linestyle=ls)
-    plt.scatter(ax.get_xticks()+width-width/2, d['rec_ratio_out'], zorder=2, color='green', label='_nolegend_',s=s)
+    plt.plot(ax.get_xticks()-width/2, d['yin'], zorder=2, color='blue', label='_nolegend_', linestyle=ls)
+    plt.scatter(ax.get_xticks()-width/2, d['yin'], zorder=2, color='blue', label='_nolegend_', s=s)
+    plt.plot(ax.get_xticks()+width-width/2, d['yout'], zorder=2, color='green', label='_nolegend_', linestyle=ls)
+    plt.scatter(ax.get_xticks()+width-width/2, d['yout'], zorder=2, color='green', label='_nolegend_',s=s)
     plt.xlabel(xlabel)
-    plt.ylabel('recRatio($\cdot$)')
+    plt.ylabel(ylabel)
     plt.legend()
     plt.savefig(out)
     plt.close(fig)
