@@ -97,36 +97,29 @@ def fig5():
     d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_capacity']
     d['bottleneck'] = d['bottleneck'].astype(int)
-    _fig(d, 'bottleneck', 'Bottleneck size', 'bottleneck_rec_ratio.png', ascending=False)
+    _fig(d, 'bottleneck', 'recons_ratio_digits', 'recons_ratio_hwrt', 
+         'Bottleneck size', 'bottleneck_rec_ratio.png', ascending=False)
     
     # Sparsity
     d = df
     d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_deep_kchannel']
-    _fig(d, 'zero_ratio', r'Sparsity rate $\rho$', 'sparsity_rec_ratio.png', ascending=True)
-
+    _fig(d, 'zero_ratio',  'recons_ratio_digits', 'recons_ratio_hwrt',
+         r'Sparsity rate $\rho$', 'sparsity_rec_ratio.png', ascending=True)
     # Noise
     d = df
     d = d[d['sampler']  == 'mnist_noise']
     d = d[d['nb_layers']==nb_layers]
-    """
-    m = df
-    m = m[m['sampler'] == 'mnist_deep']
-    m = m[m['stride'] == 0]
-    m = m[m['nb_layers'] == nb_layers]
-    print(len(m))
-    a = m.iloc[0]['recons_digits']
-    b = m.iloc[0]['recons_hwrt_thin']
-    print(a, b)
-    d = d.append(pd.DataFrame({'noise': [0.0], 'recons_digits': [a], 'recons_hwrt': [b]}))
-    """
-    _fig(d, 'noise', r'Salt and pepper corruption probability $p_{corruption}$', 'noise_rec_ratio.png', ascending=True)
+    _fig(d, 'noise', 'recons_ratio_digits', 'recons_ratio_hwrt',
+         r'Salt and pepper corruption probability $p_{corruption}$', 'noise_rec_ratio.png', 
+         ascending=True)
 
     # nb layers
     d = df
     d = d[d['sampler']  == 'mnist_deep']
     d = d[d['stride']==0]
-    _fig(d, 'nb_layers', 'Number of layers', 'nb_layers_rec_ratio.png', ascending=True)
+    _fig(d, 'nb_layers', 'emnist_digits_count', 'emnist_letters_count',
+         'Number of layers', 'nb_layers_rec_ratio.png', ascending=True)
 
 
 def fig6():
@@ -135,9 +128,40 @@ def fig6():
     X = X[0:100]
     im = grid_of_images_default(X)
     imsave('out_of_class_generator.png', im)
+    
+    nb_layers = 3
+    # Bottleneck
+    d = df
+    d = d[d['nb_layers']==nb_layers]
+    d = d[d['sampler']  == 'mnist_capacity']
+    d['bottleneck'] = d['bottleneck'].astype(int)
+    _fig(d, 'bottleneck', 'emnist_digits_count', 'emnist_letters_count',
+         'Bottleneck size', 'bottleneck_count.png', ascending=False)
+    
+    # Sparsity
+    d = df
+    d = d[d['nb_layers']==nb_layers]
+    d = d[d['sampler']  == 'mnist_deep_kchannel']
+    _fig(d, 'zero_ratio', 'emnist_digits_count', 'emnist_letters_count',
+          r'Sparsity rate $\rho$', 'sparsity_count.png', ascending=True)
+
+    # Noise
+    d = df
+    d = d[d['sampler']  == 'mnist_noise']
+    d = d[d['nb_layers']==nb_layers]
+    _fig(d, 'noise', 'emnist_digits_count', 'emnist_letters_count',
+         r'Salt and pepper corruption probability $p_{corruption}$', 'noise_count.png', 
+         ascending=True)
+
+    # nb layers
+    d = df
+    d = d[d['sampler']  == 'mnist_deep']
+    d = d[d['stride']==0]
+    _fig(d, 'nb_layers', 'emnist_digits_count', 'emnist_letters_count',
+         'Number of layers', 'nb_layers_count.png', ascending=True)
 
 
-def _fig(d, col, xlabel, out, ascending=False):
+def _fig(d, col, yin, yout, xlabel, out, ascending=False):
     d = d.copy()
     yin = 'recons_ratio_digits'
     yout = 'recons_ratio_hwrt'
