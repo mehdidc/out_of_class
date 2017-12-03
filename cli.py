@@ -3,7 +3,7 @@ from clize import run
 import keras.backend as K
 from skimage.io import imsave
 import numpy as np
-from machinedesign.viz import grid_of_images_default
+from machinedesign.viz import grid_of_images_default, grid_of_images
 from machinedesign.autoencoder.interface import load
 from lightjob.cli import load_db
 
@@ -39,7 +39,7 @@ def extract(*, generator='mnist', discriminator='letters', classes=None, out='ex
         x.append(X[idx][0:nb])
     x = np.array(x)
     x = x.reshape((x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4]))
-    im = grid_of_images_default(x, shape=(len(classes), nb))
+    im = grid_of_images(x, shape=(len(classes), nb))
     imsave(out, im)
 
 
