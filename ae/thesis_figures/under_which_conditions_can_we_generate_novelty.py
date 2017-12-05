@@ -131,7 +131,7 @@ def fig6():
     data = np.load('../results/jobs/f316dedd30ebc5f51c4678f07979436c/gen/generated.npz')
     X = data['generated']
     X = X[0:100]
-    im = grid_of_images_default(X)
+    im = grid_of_images_default(X, border=10, bordercolor=(0, 0, 0))
     imsave('out_of_class_generator.png', im)
     
     #nb_layers = 3
