@@ -184,9 +184,10 @@ def mnist_deep_kchannel(rng):
     return t, g
 
 def mnist_deep_kchannel_stride(rng):
-    nb = int(rng.choice((1, 2, 3, 4, 5, 6)))
-    #zero_ratio = float(rng.choice((0.1, 0.2, 0.4, 0.5, 0.7, 0.9)))
-    zero_ratio = float(rng.choice((0.1, 0.5, 0.9)))
+    #nb = int(rng.choice((1, 2, 3, 4, 5, 6)))
+    nb = 3
+    zero_ratio = float(rng.choice((0.1, 0.2, 0.4, 0.5, 0.7, 0.9)))
+    #zero_ratio = float(rng.choice((0.1, 0.5, 0.9)))
     stride = int(rng.choice((1, 2, 4)))
     t, g = mnist()
     t['report']['outdir'] = ''

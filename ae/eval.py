@@ -1,3 +1,4 @@
+import pandas as pd
 import os
 from clize import run
 from functools import lru_cache
@@ -215,5 +216,138 @@ def sanity():
         db.job_update(j['summary'], {'stats': stats})
 
 
+def get_hypers_df():
+    db = load_db()
+    jobs = db.jobs_with()
+    rows = []
+    for j in jobs:
+        col = {}
+        if j['stats'] is None:
+            continue
+        for k, v in j['stats'].items():
+            col[k] = v
+            if type(v) is dict:
+                for kk, v in v.items():
+                    col[kk]=v
+        try:
+            col['stride'] = j['content']['train']['model']['params']['code_activations'][-1]['params']['stride']
+        except Exception:
+            pass
+        try:
+            col['nb_layers'] = len(j['content']['train']['model']['params']['encode_nb_filters'])
+        except Exception:
+            col['nb_layers'] = len(j['content']['train']['model'][1]['params']['encode_nb_filters'])    
+        try:
+             col['zero_ratio'] = j['content']['train']['model']['params']['code_activations'][1]['params']['zero_ratio']
+        except Exception:
+            pass
+        try:
+            col['bottleneck'] = min(j['content']['train']['model']['params']['encode_nb_filters'])
+        except Exception:
+            pass
+        try:
+            col['noise'] = j['content']['train']['model'][0]['params']['params']['proba']
+        except Exception:
+            pass
+        col['sampler'] = j['sampler']
+        col['job_id'] = j['summary']
+        try:
+            col['noise_count'] = 1.0 - (col['digits_count'] + col['letters_count'])
+        except  Exception:
+            pass
+        try:
+            col['digits_object'] = 1 - col['digits_entropy']
+        except Exception:
+            pass
+        try:
+            col['letters_object'] = 1 - col['letters_entropy']
+        except Exception:
+            pass
+        try:
+            col['digits_and_letters_object'] = 1 - col['digits_and_letters_entropy']
+        except Exception:
+            pass
+        try:
+            col['emnist_object'] = 1 - col['emnist_letters_entropy']
+        except Exception:
+            pass
+        if 'recons_ratio' in col:
+            del col['recons_ratio']
+        if 'recons' in col:
+            del col['recons']
+        if 'metrics' in col:
+            del col['metrics']
+        rows.append(col)
+    df_full = pd.DataFrame(rows)
+    df_full = df_full.set_index('job_id')
+    return df_full
+
+def hypers(*, out='../export/hypers.csv'):
+    from sklearn.utils import shuffle
+    from itertools import combinations
+    from neuralgam import FullyConnectNeuralGam
+    from keras.optimizers import Adam
+
+    labels = pd.read_csv('../export/annotations.csv')
+    hypers = get_hypers_df()
+    hypers['innovative'] = np.nan
+    hypers['existing'] = np.nan
+    hypers['noisy'] = np.nan
+    for i in range(len(labels)):
+        l = labels.iloc[i]
+        if l['id'] in hypers.index:
+            hypers.loc[l['id'], l['label']] = 1
+    hypers_full = hypers
+    hypers = hypers.dropna(axis=0, how='all', subset=['innovative', 'existing', 'noisy'])
+    hypers = shuffle(hypers, random_state=42) 
+    inp_cols = [
+        'letters_count', 
+        'letters_diversity', 
+        'letters_object', 
+    ]
+    inp = hypers[inp_cols]
+    inp = inp.fillna(-1)
+    outp = hypers['innovative']
+    outp = outp.fillna(0)
+    X = inp.values
+    y = outp.values
+    np.random.seed(42)
+    features = []
+    orders = [1]
+    F = np.arange(X.shape[1])
+    for o in orders:
+        for f in combinations(F, o):
+            features.append(f)
+    model = FullyConnectNeuralGam(
+        hidden_units=[200, 120],
+        hidden_activation='relu',
+        output_activation='linear',
+        features=features,
+        optimizer=Adam(lr=0.01),
+        loss='mean_squared_error',
+        batch_size=32,
+        epochs=100,
+        verbose=0
+    )
+    model.fit(X, y)
+    ypred = model.predict(X)>=0.5
+    ypred = ypred[:, 0]
+    print((ypred==y).mean())
+    ylist = model.predict_components(X)
+    yl = np.concatenate(ylist, axis=1)
+    model.feature_importances_ = yl.var(axis=0) / yl.var(axis=0).sum()
+
+    H = hypers_full.copy()
+    Xfull = H[inp_cols].fillna(-1).values
+    if hasattr(model, 'predict_proba'):
+        ypred = model.predict_proba(Xfull)
+        ypred = ypred[:, 1]
+    else:
+        ypred = model.predict(Xfull)
+    ypred = ypred.flatten()
+    H['y'] = ypred
+    H.to_csv(out, index_label='job_id')
+
+
 if __name__ == '__main__':
-    run([evaluate, sanity])
+    run([evaluate, sanity, hypers])

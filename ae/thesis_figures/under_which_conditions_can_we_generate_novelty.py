@@ -8,6 +8,8 @@ from machinedesign.autoencoder.interface import load
 import keras.backend as K
 from skimage.io import imsave
 from machinedesign.viz import grid_of_images_default
+import sys
+sys.path.append('..')
 from hypers import get_df
 
 sns.set_style('white')

@@ -54,8 +54,12 @@ def generate_job(sampler, *, force=False):
         t, g = _set_folder(t, g, os.path.join('jobs', j['summary']))
         if os.path.exists(g['method']['save_folder']) and not force:
             print('Repository {} exists, I dont override for safety. Delete it if you want to'.format(g['method']['save_folder']))
-            return
-        _generate_from(g)
+            continue
+        try:
+            _generate_from(g)
+        except Exception as ex:
+            print(ex)
+            continue
 
 def generate(job):
     get_params = getattr(hypers, job)
