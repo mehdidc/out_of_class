@@ -290,6 +290,7 @@ def hypers(*, out='../export/hypers.csv'):
     from sklearn.utils import shuffle
     from itertools import combinations
     from neuralgam import FullyConnectNeuralGam
+    from sklearn.linear_model import LogisticRegression
     from keras.optimizers import Adam
 
     labels = pd.read_csv('../export/annotations.csv')
@@ -305,11 +306,11 @@ def hypers(*, out='../export/hypers.csv'):
     hypers = hypers.dropna(axis=0, how='all', subset=['innovative', 'existing', 'noisy'])
     hypers = shuffle(hypers, random_state=42) 
     inp_cols = [
-        'letters_count', 
-        'letters_diversity', 
-        'letters_object', 
+        'emnist_letters_count', 
+        #'letters_diversity', 
+        #'letters_object',
+        'letters_objectness',
     ]
-
     for col in ('innovative', 'existing', 'noisy'):
         inp = hypers[inp_cols]
         inp = inp.fillna(-1)
@@ -324,6 +325,7 @@ def hypers(*, out='../export/hypers.csv'):
         for o in orders:
             for f in combinations(F, o):
                 features.append(f)
+        """
         model = FullyConnectNeuralGam(
             hidden_units=[200, 120],
             hidden_activation='relu',
@@ -335,14 +337,11 @@ def hypers(*, out='../export/hypers.csv'):
             epochs=100,
             verbose=0
         )
+        """
+        model = LogisticRegression()
         model.fit(X, y)
-        ypred = model.predict(X)>=0.5
-        ypred = ypred[:, 0]
-        print((ypred==y).mean())
-        ylist = model.predict_components(X)
-        yl = np.concatenate(ylist, axis=1)
-        model.feature_importances_ = yl.var(axis=0) / yl.var(axis=0).sum()
-
+        print(inp.columns, model.coef_[0])
+        print((model.predict(X)==y).mean())
         Xfull = hypers_full[inp_cols].fillna(-1).values
         if hasattr(model, 'predict_proba'):
             ypred = model.predict_proba(Xfull)

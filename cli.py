@@ -12,7 +12,10 @@ def thumbnails():
     for folder in folders:
         print(folder)
         dirname = os.path.join('ae', 'results', 'jobs', folder)
-        data = np.load(os.path.join(dirname, 'gen', 'generated.npz'))
+        filename = os.path.join(dirname, 'gen', 'generated.npz')
+        if not os.path.exists(filename):
+            continue
+        data = np.load(filename)
         X = data['generated']
         X = X[0:25]
         im = grid_of_images_default(X)
