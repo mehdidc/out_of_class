@@ -1,4 +1,5 @@
 from functools import partial
+import pandas as pd
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
@@ -8,9 +9,6 @@ from machinedesign.autoencoder.interface import load
 import keras.backend as K
 from skimage.io import imsave
 from machinedesign.viz import grid_of_images_default
-import sys
-sys.path.append('..')
-from hypers import get_df
 
 sns.set_style('white')
 
@@ -32,7 +30,7 @@ X = data['generated'][0:1000]
 
 dae = load('../results/mnist_dense2')
 
-df = get_df()
+df = pd.read_csv('../../export/hypers.csv')
 
 def fig1():
     h = enc([X])
@@ -138,8 +136,8 @@ def fig6():
     nb_layers = 3
     fig = partial(
         _fig,
-        yin='digits_count',
-        yout='letters_count',
+        yin='existing',
+        yout='innovative',
         ylabel=r'$count(\cdot)$',
     )
     #

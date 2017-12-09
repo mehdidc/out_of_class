@@ -63,6 +63,7 @@ def _ratio_unique(folder, **kw):
 def _metrics(folder, **kw):
     stat = kw['stats'].get('metrics', {})
     force = kw['force']
+    print(stat)
     if len(stat) and not force:
         print('skip')
         return {}
@@ -90,18 +91,21 @@ def _metrics(folder, **kw):
     )
     htrue_digits = enc.predict(Xtrue_digits)
     htrue_letters = enc.predict(Xtrue_letters)
-    if not os.path.exists(os.path.join(folder, 'model.h5')):
-        print('model does not exist')
-        return {}
     col = {}
-    model = load(folder)
-    col['nb_params'] = model.count_params()
+
     filename = '{}/gen/generated.npz'.format(folder)
     if not os.path.exists(filename):
         print('gen does not exist')
         return {}
     X = np.load(filename)['generated']
     X = X[0:nb]
+
+    if not os.path.exists(os.path.join(folder, 'model.h5')):
+        print('model does not exist')
+        return {}
+    model = load(folder)
+    col['nb_params'] = model.count_params()
+
     
     probas = clf_digits_and_letters.predict(X)
     col['digits_count'] = compute_count(probas, digits, theta=theta)
@@ -297,7 +301,7 @@ def hypers(*, out='../export/hypers.csv'):
         l = labels.iloc[i]
         if l['id'] in hypers.index:
             hypers.loc[l['id'], l['label']] = 1
-    hypers_full = hypers
+    hypers_full = hypers.copy()
     hypers = hypers.dropna(axis=0, how='all', subset=['innovative', 'existing', 'noisy'])
     hypers = shuffle(hypers, random_state=42) 
     inp_cols = [
@@ -305,48 +309,49 @@ def hypers(*, out='../export/hypers.csv'):
         'letters_diversity', 
         'letters_object', 
     ]
-    inp = hypers[inp_cols]
-    inp = inp.fillna(-1)
-    outp = hypers['innovative']
-    outp = outp.fillna(0)
-    X = inp.values
-    y = outp.values
-    np.random.seed(42)
-    features = []
-    orders = [1]
-    F = np.arange(X.shape[1])
-    for o in orders:
-        for f in combinations(F, o):
-            features.append(f)
-    model = FullyConnectNeuralGam(
-        hidden_units=[200, 120],
-        hidden_activation='relu',
-        output_activation='linear',
-        features=features,
-        optimizer=Adam(lr=0.01),
-        loss='mean_squared_error',
-        batch_size=32,
-        epochs=100,
-        verbose=0
-    )
-    model.fit(X, y)
-    ypred = model.predict(X)>=0.5
-    ypred = ypred[:, 0]
-    print((ypred==y).mean())
-    ylist = model.predict_components(X)
-    yl = np.concatenate(ylist, axis=1)
-    model.feature_importances_ = yl.var(axis=0) / yl.var(axis=0).sum()
 
-    H = hypers_full.copy()
-    Xfull = H[inp_cols].fillna(-1).values
-    if hasattr(model, 'predict_proba'):
-        ypred = model.predict_proba(Xfull)
-        ypred = ypred[:, 1]
-    else:
-        ypred = model.predict(Xfull)
-    ypred = ypred.flatten()
-    H['y'] = ypred
-    H.to_csv(out, index_label='job_id')
+    for col in ('innovative', 'existing', 'noisy'):
+        inp = hypers[inp_cols]
+        inp = inp.fillna(-1)
+        outp = hypers[col]
+        outp = outp.fillna(0)
+        X = inp.values
+        y = outp.values
+        np.random.seed(42)
+        features = []
+        orders = [1]
+        F = np.arange(X.shape[1])
+        for o in orders:
+            for f in combinations(F, o):
+                features.append(f)
+        model = FullyConnectNeuralGam(
+            hidden_units=[200, 120],
+            hidden_activation='relu',
+            output_activation='linear',
+            features=features,
+            optimizer=Adam(lr=0.01),
+            loss='mean_squared_error',
+            batch_size=32,
+            epochs=100,
+            verbose=0
+        )
+        model.fit(X, y)
+        ypred = model.predict(X)>=0.5
+        ypred = ypred[:, 0]
+        print((ypred==y).mean())
+        ylist = model.predict_components(X)
+        yl = np.concatenate(ylist, axis=1)
+        model.feature_importances_ = yl.var(axis=0) / yl.var(axis=0).sum()
+
+        Xfull = hypers_full[inp_cols].fillna(-1).values
+        if hasattr(model, 'predict_proba'):
+            ypred = model.predict_proba(Xfull)
+            ypred = ypred[:, 1]
+        else:
+            ypred = model.predict(Xfull)
+        ypred = ypred.flatten()
+        hypers_full[col] = ypred
+    hypers_full.to_csv(out, index_label='job_id')
 
 
 if __name__ == '__main__':
