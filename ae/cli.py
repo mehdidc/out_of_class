@@ -47,15 +47,15 @@ def train_job(job):
     _train(t)
     db.modify_state_of(job_id, SUCCESS)
 
-def generate_job(job, *, force=False):
+def generate_job(sampler, *, force=False):
     db = load_db()
-    j = db.get_job_by_summary(job)
-    t, g = j['content']['train'], j['content']['generate']
-    t, g = _set_folder(t, g, os.path.join('jobs', job))
-    if os.path.exists(g['method']['save_folder']) and not force:
-        print('Repository {} exists, I dont override for safety. Delete it if you want to'.format(g['method']['save_folder']))
-        return
-    _generate_from(g)
+    for j in db.jobs_with(sampler=sampler):
+        t, g = j['content']['train'], j['content']['generate']
+        t, g = _set_folder(t, g, os.path.join('jobs', j['summary']))
+        if os.path.exists(g['method']['save_folder']) and not force:
+            print('Repository {} exists, I dont override for safety. Delete it if you want to'.format(g['method']['save_folder']))
+            return
+        _generate_from(g)
 
 def generate(job):
     get_params = getattr(hypers, job)

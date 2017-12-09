@@ -1,6 +1,5 @@
 from functools import partial
 import numpy as np
-import pandas as pd
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -137,8 +136,8 @@ def fig6():
     nb_layers = 3
     fig = partial(
         _fig,
-        yin='emnist_digits_count',
-        yout='emnist_letters_count',
+        yin='digits_count',
+        yout='letters_count',
         ylabel=r'$count(\cdot)$',
     )
     #

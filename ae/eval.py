@@ -30,7 +30,7 @@ def _recons_ratio(folder, **kw):
     out = {}
     model = load(folder)
     for name, ds in zip(names, datasets):
-        data = np.load('data/{}.npz'.format(ds))
+        data = np.load('../data/{}.npz'.format(ds))
         X = data['X'][0:nb] / 255.0
         Xr = model.predict(X)
         err = (np.abs(X-Xr).sum(axis=(1, 2, 3)) < theta).mean()
@@ -72,16 +72,16 @@ def _metrics(folder, **kw):
     emnist_digits = np.arange(0, 10)
     emnist_letters = np.arange(10, 47)
 
-    data = np.load('data/digits.npz')
+    data = np.load('../data/digits.npz')
     Xtrue_digits = data['X'][0:nb]
-    data = np.load('data/letters.npz')
+    data = np.load('../data/letters.npz')
     Xtrue_letters = data['X'][0:nb]
 
-    clf_digits_and_letters = load('discr/digits_and_letters_balanced')
-    clf_digits = load('discr/digits')
-    clf_letters = load('discr/letters')
-    clf_hwrt = load('discr/hwrt')
-    clf_emnist = load('discr/emnist')
+    clf_digits_and_letters = load('../discr/digits_and_letters_balanced')
+    clf_digits = load('../discr/digits')
+    clf_letters = load('../discr/letters')
+    clf_hwrt = load('../discr/hwrt')
+    clf_emnist = load('../discr/emnist')
 
     enc = Model(
         inputs=clf_digits_and_letters.layers[0].input, 
@@ -152,21 +152,24 @@ eval_funcs = {
 }
 
 
-def evaluate(*, force=False, name=None, job=None):
+def evaluate(*, force=False, name=None, job=None, sampler=None):
+    kw = {}
+    if sampler:
+        kw['sampler'] = sampler
+    if job:
+        kw['summary'] = job
     db = load_db()
-    if job is not None:
-        jobs = db.jobs_with(summary=job)
+    jobs = db.jobs_with(**kw)
+    if name is None:
+        funcs = eval_funcs.items()
     else:
-        jobs = db.all_jobs()
+        funcs = (name, eval_funcs[name]),
+
     for j in jobs:
         folder = os.path.join('results', 'jobs', j['summary'])
         stats = {}
         if j.get('stats') is not None:
             stats.update(j['stats'])
-        if name is None:
-            funcs = eval_funcs.items()
-        else:
-            funcs = (name, eval_funcs[name]),
         stats_orig = stats.copy() 
         for name, func in funcs:
             print('Eval of {:<16} on {}'.format(name, j['summary']))
