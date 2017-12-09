@@ -132,13 +132,13 @@ def fig6():
     X = X[0:100]
     im = grid_of_images_default(X, border=10, bordercolor=(0, 0, 0))
     imsave('out_of_class_generator.png', im)
-    
     nb_layers = 3
     fig = partial(
         _fig,
-        yin='existing',
-        yout='innovative',
+        yin='digits_count',
+        yout='emnist_letters_count',
         ylabel=r'$count(\cdot)$',
+        kind='factorplot'
     )
     #
     # Bottleneck
@@ -171,59 +171,22 @@ def fig6():
         ascending=True)
 
 
-def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False, line=True):
-    d = d.copy()
-    r = []
-    d = d.sort_values(by=xcol, ascending=ascending)
-    for i in range(len(d)):
-        vals = d.iloc[i]
-        cols = {}
-        cols['x'] = vals[xcol]
-        cols['y'] = vals[yin]
-        cols['type'] = 'in'
-        r.append(cols)
-        cols = {}
-        cols['x'] = vals[xcol]
-        cols['y'] = vals[yout]
-        cols['type'] = 'out'
-        r.append(cols)
-    #dd = pd.DataFrame(r)
-    #fig = plt.figure(figsize=(10, 5))
-    fig, ax = plt.subplots(figsize=(10, 5))
-    """
-    ax = sns.barplot(
-        x='x', 
-        y='y',
-        hue='type',
-        data=dd, 
-        edgecolor=['black'] * len(dd),
-        linewidth=2,
-        order=d[xcol].unique(),
-    )
-    for c in ax.get_children():
-        if hasattr(c, 'get_width'):
-            width = c.get_width()
-            break
-    """
+def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False, kind='line'):
     s = 30
     ls = 'solid'
-    vals = d[xcol].values
-    ax.set_xticks(d[xcol].values)
-    if line:
+
+    d = d.copy()
+    d = d.sort_values(by=xcol, ascending=ascending)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    #ax.set_xticks(d[xcol].values)
+
+    if kind == 'line':
         plt.plot(d[xcol], d[yin], zorder=2, color='blue', linestyle=ls, label='in')
         plt.plot(d[xcol], d[yout], zorder=2, color='green', linestyle=ls, label='out')
         plt.scatter(d[xcol], d[yin], zorder=2, color='blue', linestyle=ls, s=s, label='_nolegend_')
         plt.scatter(d[xcol], d[yout], zorder=2, color='green', linestyle=ls, s=s, label='_nologend_')
-        """
-        plt.plot(ax.get_xticks()-width/2, d[yin], zorder=2, color='blue', 
-                label='_nolegend_', linestyle=ls)
-        plt.scatter(ax.get_xticks()-width/2, d[yin], zorder=2, color='blue', 
-                    label='_nolegend_', s=s)
-        plt.plot(ax.get_xticks()+width-width/2, d[yout], zorder=2, color='green', 
-                label='_nolegend_', linestyle=ls)
-        plt.scatter(ax.get_xticks()+width-width/2, d[yout], zorder=2, color='green', 
-                    label='_nolegend_',s=s)
-        """
+    elif kind == 'factorplot':
+        sns.factorplot(x=xcol, y=yout, data=df, size=5, aspect=1.5)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.legend()

@@ -305,11 +305,13 @@ def hypers(*, out='../export/hypers.csv'):
     hypers_full = hypers.copy()
     hypers = hypers.dropna(axis=0, how='all', subset=['innovative', 'existing', 'noisy'])
     hypers = shuffle(hypers, random_state=42) 
+    print(len(hypers))
     inp_cols = [
-        'emnist_letters_count', 
+        #'letters_count',
         #'letters_diversity', 
         #'letters_object',
-        'letters_objectness',
+        'emnist_letters_count', 
+        'hwrt_objectness',
     ]
     for col in ('innovative', 'existing', 'noisy'):
         inp = hypers[inp_cols]
