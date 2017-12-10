@@ -275,6 +275,10 @@ def get_hypers_df():
             col['emnist_object'] = 1 - col['emnist_letters_entropy']
         except Exception:
             pass
+        try:
+            col['hwrt_object'] = 1 - col['hwrt_entropy']
+        except Exception:
+            pass
         if 'recons_ratio' in col:
             del col['recons_ratio']
         if 'recons' in col:
@@ -307,11 +311,14 @@ def hypers(*, out='../export/hypers.csv'):
     hypers = shuffle(hypers, random_state=42) 
     print(len(hypers))
     inp_cols = [
-        #'letters_count',
-        #'letters_diversity', 
-        #'letters_object',
-        'emnist_letters_count', 
-        'hwrt_objectness',
+        #'hwrt_object',
+        #'hwrt_diversity',
+        #'hwrt_objectness',
+        'letters_count',
+        'letters_diversity', 
+        'letters_object',
+        #'emnist_letters_count', 
+        #'hwrt_objectness',
     ]
     for col in ('innovative', 'existing', 'noisy'):
         inp = hypers[inp_cols]
@@ -327,7 +334,6 @@ def hypers(*, out='../export/hypers.csv'):
         for o in orders:
             for f in combinations(F, o):
                 features.append(f)
-        """
         model = FullyConnectNeuralGam(
             hidden_units=[200, 120],
             hidden_activation='relu',
@@ -339,21 +345,21 @@ def hypers(*, out='../export/hypers.csv'):
             epochs=100,
             verbose=0
         )
-        """
-        model = LogisticRegression()
+        #model = LogisticRegression()
         model.fit(X, y)
-        print(inp.columns, model.coef_[0])
-        print((model.predict(X)==y).mean())
+        #print(inp.columns, model.coef_[0])
+        ypred = model.predict(X)[:, 0] >= 0.5
+        print((y==ypred).mean())
         Xfull = hypers_full[inp_cols].fillna(-1).values
         if hasattr(model, 'predict_proba'):
             ypred = model.predict_proba(Xfull)
             ypred = ypred[:, 1]
         else:
-            ypred = model.predict(Xfull)
+            ypred = model.predict(Xfull)[:, 0] >= 0.5
         ypred = ypred.flatten()
         hypers_full[col] = ypred
     hypers_full.to_csv(out, index_label='job_id')
 
 
 if __name__ == '__main__':
-    run([evaluate, sanity, hypers])
+    run([evaluate, hypers, sanity])
