@@ -237,6 +237,12 @@ def get_hypers_df():
             col['stride'] = j['content']['train']['model']['params']['code_activations'][-1]['params']['stride']
         except Exception:
             pass
+
+        try:
+            col['stride'] = j['content']['train']['model'][1]['params']['code_activations'][-1]['params']['stride']
+        except Exception:
+            pass
+
         try:
             col['nb_layers'] = len(j['content']['train']['model']['params']['encode_nb_filters'])
         except Exception:
