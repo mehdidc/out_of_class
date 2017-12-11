@@ -141,13 +141,13 @@ def fig6():
         ylabel=r'$count(\cdot)$',
         plot_in=False,
     )
-    #
     # Bottleneck
     d = df
     d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_capacity']
     d['bottleneck'] = d['bottleneck'].astype(int)
     fig(d, xcol='bottleneck', xlabel='Bottleneck size', out='bottleneck_count.png', 
+        kind='lmplot',
         ascending=False)
     
     # Sparsity
@@ -155,6 +155,7 @@ def fig6():
     d = d[d['nb_layers']==nb_layers]
     d = d[d['sampler']  == 'mnist_deep_kchannel']
     fig(d, xcol='zero_ratio', xlabel=r'Sparsity rate $\rho$', out='sparsity_count.png', 
+        kind='lmplot',
         ascending=True)
 
     # Noise
@@ -163,6 +164,7 @@ def fig6():
     d = d[d['nb_layers']==nb_layers]
     d = d[d['noise'] <= 0.5]
     fig(d, xcol='noise', xlabel=r'Salt and pepper corruption probability $p_{corruption}$', 
+        kind='lmplot',
         out='noise_count.png', ascending=True)
 
     # nb layers
@@ -170,13 +172,18 @@ def fig6():
     d = d[d['sampler']  == 'mnist_deep']
     d = d[d['stride']==1]
     fig(d, xcol='nb_layers', xlabel='Number of layers', out='nb_layers_count.png', 
+        kind='lmplot',
         ascending=True)
 
     # global
-    sns.lmplot('recons_ratio_hwrt', 'emnist_letters_count', data=df)
-    plt.xlabel('recRatio(out)')
-    plt.ylabel('count(out)')
+    d = df
+    #df = df[df['sampler'] == 'mnist_deep']
+    d = d[d['nb_layers']>=nb_layers]
+    sns.lmplot('emnist_letters_count', 'recons_ratio_hwrt', data=d, logistic=True)
+    plt.xlabel('$count(D_{out})$')
+    plt.ylabel('$recRatio(D_{out})$')
     plt.savefig('recons_count.png')
+
 
 def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False, plot_in=True, plot_out=True, kind='line'):
     s = 80
@@ -203,6 +210,8 @@ def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False, plot_in=True,
             plt.scatter(x, y, zorder=2, color='blue', linestyle=ls, s=s, label='_nolegend_')
         elif kind == 'factorplot':
             pass
+        elif kind == 'lmplot':
+            sns.lmplot(xcol, yin, data=d)
 
     if plot_out:
         if kind == 'line':
@@ -212,6 +221,9 @@ def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False, plot_in=True,
             plt.scatter(x, y, zorder=2, color='green', linestyle=ls, s=s, label='_nologend_')
         elif kind == 'factorplot':
             pass
+        elif kind == 'lmplot':
+            sns.lmplot(xcol, yout, data=d)
+
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.legend()

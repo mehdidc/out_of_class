@@ -63,7 +63,6 @@ def _ratio_unique(folder, **kw):
 def _metrics(folder, **kw):
     stat = kw['stats'].get('metrics', {})
     force = kw['force']
-    print(stat)
     if len(stat) and not force:
         print('skip')
         return {}
