@@ -233,6 +233,7 @@ def get_hypers_df():
             if type(v) is dict:
                 for kk, v in v.items():
                     col[kk]=v
+                    col[k + '_' + kk] = v
         try:
             col['stride'] = j['content']['train']['model']['params']['code_activations'][-1]['params']['stride']
         except Exception:

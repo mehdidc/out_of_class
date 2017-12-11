@@ -115,6 +115,7 @@ def fig5():
     d = df
     d = d[d['sampler']  == 'mnist_noise']
     d = d[d['nb_layers']==nb_layers]
+    d = d[d['noise'] <= 0.5]
     fig(d, xcol='noise', xlabel=r'Salt and pepper corruption probability $p_{corruption}$', 
         out='noise_rec_ratio.png', ascending=True)
 
@@ -127,7 +128,7 @@ def fig5():
 
 
 def fig6():
-    data = np.load('../results/jobs/93796d92288367753127039b1bc8bb9f/gen/generated.npz')
+    data = np.load('../results/jobs/f316dedd30ebc5f51c4678f07979436c/gen/generated.npz')
     X = data['generated']
     X = X[0:100]
     im = grid_of_images_default(X, border=10, bordercolor=(0, 0, 0))
@@ -135,10 +136,10 @@ def fig6():
     nb_layers = 3
     fig = partial(
         _fig,
-        yin='digits_count',
+        yin='emnist_digits_count',
         yout='emnist_letters_count',
         ylabel=r'$count(\cdot)$',
-        kind='factorplot'
+        plot_in=False,
     )
     #
     # Bottleneck
@@ -160,42 +161,65 @@ def fig6():
     d = df
     d = d[d['sampler']  == 'mnist_noise']
     d = d[d['nb_layers']==nb_layers]
+    d = d[d['noise'] <= 0.5]
     fig(d, xcol='noise', xlabel=r'Salt and pepper corruption probability $p_{corruption}$', 
         out='noise_count.png', ascending=True)
 
     # nb layers
     d = df
     d = d[d['sampler']  == 'mnist_deep']
-    d = d[d['stride']==0]
+    d = d[d['stride']==1]
     fig(d, xcol='nb_layers', xlabel='Number of layers', out='nb_layers_count.png', 
         ascending=True)
 
+    # global
+    sns.lmplot('recons_ratio_hwrt', 'emnist_letters_count', data=df)
+    plt.xlabel('recRatio(out)')
+    plt.ylabel('count(out)')
+    plt.savefig('recons_count.png')
 
-def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False, kind='line'):
-    s = 30
+def _fig(d, xcol, yin, yout, xlabel, ylabel, out, ascending=False, plot_in=True, plot_out=True, kind='line'):
+    s = 80
     ls = 'solid'
+    lw = 2
 
     d = d.copy()
     d = d.sort_values(by=xcol, ascending=ascending)
     fig, ax = plt.subplots(figsize=(10, 5))
-    #ax.set_xticks(d[xcol].values)
 
-    if kind == 'line':
-        plt.plot(d[xcol], d[yin], zorder=2, color='blue', linestyle=ls, label='in')
-        plt.plot(d[xcol], d[yout], zorder=2, color='green', linestyle=ls, label='out')
-        plt.scatter(d[xcol], d[yin], zorder=2, color='blue', linestyle=ls, s=s, label='_nolegend_')
-        plt.scatter(d[xcol], d[yout], zorder=2, color='green', linestyle=ls, s=s, label='_nologend_')
-    elif kind == 'factorplot':
-        sns.factorplot(x=xcol, y=yout, data=df, size=5, aspect=1.5)
+    x = np.linspace(0, 1, len(d))
+    l = d[xcol].values
+    plt.xticks(x, l)
+    if ascending is False:
+        plt.xticks(x, l[::-1])
+        plt.xlim(1, 0)
+
+
+    if plot_in:
+        if kind == 'line':
+            y = d[yin]
+            if ascending is False: y = y[::-1]
+            plt.plot(x, y, zorder=2, color='blue', linestyle=ls, label='in', lw=lw)
+            plt.scatter(x, y, zorder=2, color='blue', linestyle=ls, s=s, label='_nolegend_')
+        elif kind == 'factorplot':
+            pass
+
+    if plot_out:
+        if kind == 'line':
+            y = d[yout]
+            if ascending is False: y = y[::-1]
+            plt.plot(x, y, zorder=2, color='green', linestyle=ls, label='out', lw=lw)
+            plt.scatter(x, y, zorder=2, color='green', linestyle=ls, s=s, label='_nologend_')
+        elif kind == 'factorplot':
+            pass
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.legend()
     plt.savefig(out)
     plt.close(fig)
-
 #fig1()
 #fig2()
 #fig3()
 #fig4()
-#fig5()
+fig5()
 fig6()
