@@ -75,9 +75,9 @@ def _metrics(folder, **kw):
     emnist_letters = np.arange(10, 47)
 
     data = np.load('../data/digits.npz')
-    Xtrue_digits = data['X'][0:nb]
+    Xtrue_digits = data['X'][0:nb] / 255.0
     data = np.load('../data/letters.npz')
-    Xtrue_letters = data['X'][0:nb]
+    Xtrue_letters = data['X'][0:nb] / 255.0
 
     clf_digits_and_letters = load('../discr/digits_and_letters_balanced')
     clf_digits = load('../discr/digits')
@@ -315,10 +315,10 @@ def hypers(*, out='../export/hypers.csv'):
         #'hwrt_diversity',
         #'hwrt_objectness',
         'letters_count',
-        'letters_diversity', 
-        'letters_object',
+        'letters_objectness',
+        #'letters_diversity', 
+        #'letters_object',
         #'emnist_letters_count', 
-        #'hwrt_objectness',
     ]
     for col in ('innovative', 'existing', 'noisy'):
         inp = hypers[inp_cols]
@@ -345,17 +345,18 @@ def hypers(*, out='../export/hypers.csv'):
             epochs=100,
             verbose=0
         )
-        #model = LogisticRegression()
+        model = LogisticRegression()
         model.fit(X, y)
-        #print(inp.columns, model.coef_[0])
-        ypred = model.predict(X)[:, 0] >= 0.5
+        #ypred = model.predict(X)[:, 0] >= 0.5
+        ypred = model.predict(X)
         print((y==ypred).mean())
         Xfull = hypers_full[inp_cols].fillna(-1).values
         if hasattr(model, 'predict_proba'):
+            print(inp.columns, model.coef_[0])
             ypred = model.predict_proba(Xfull)
             ypred = ypred[:, 1]
         else:
-            ypred = model.predict(Xfull)[:, 0] >= 0.5
+            ypred = model.predict(Xfull)[:, 0]
         ypred = ypred.flatten()
         hypers_full[col] = ypred
     hypers_full.to_csv(out, index_label='job_id')
