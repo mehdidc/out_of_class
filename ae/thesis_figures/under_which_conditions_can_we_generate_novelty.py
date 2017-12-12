@@ -128,7 +128,7 @@ def fig5():
 
 
 def fig6():
-    data = np.load('../results/jobs/f316dedd30ebc5f51c4678f07979436c/gen/generated.npz')
+    data = np.load('../results/jobs/93796d92288367753127039b1bc8bb9f/gen/generated.npz')
     X = data['generated']
     X = X[0:100]
     im = grid_of_images_default(X, border=10, bordercolor=(0, 0, 0))
