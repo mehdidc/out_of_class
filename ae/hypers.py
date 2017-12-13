@@ -1386,3 +1386,27 @@ def mnist_discrete():
         'seed': 42,
     }
     return t, g 
+
+def quickdraw():
+    t = basic_train_params.copy()
+    t['data']['train']['pipeline'][0]['params']['filename'] = '../data/quickdraw.npz'
+    t['model'] = {
+        'name': 'convolutional_bottleneck',
+        'params':{
+            'stride': 1,
+            'encode_nb_filters': [64, 128, 256],
+            'encode_filter_sizes': [5, 5, 5],
+            'encode_activations': ['relu', 'relu', 'relu'],
+            'code_activations': [
+                {'name': 'winner_take_all_spatial', 'params': {}},
+                {'name': 'winner_take_all_channel', 'params': {'stride': 1}},
+            ],
+            'decode_nb_filters': [128, 64],
+            'decode_filter_sizes': [5, 5],
+            'decode_activations': ['relu', 'relu'],
+            'output_filter_size': 5,
+            'output_activation': 'sigmoid'
+         }
+    }
+    g = basic_generate_params.copy()
+    return t, g

@@ -360,7 +360,7 @@ def quickdraw():
     nb = len(np.load(train_file)['y'])
     nb_train = int(0.9 * nb)
     nb_valid = int(0.05 * nb)
-    nb_classes = 10
+    nb_classes = 88
     params['report']['outdir'] = 'quickdraw'
 
     params['data'] = {
