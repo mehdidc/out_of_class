@@ -1394,19 +1394,38 @@ def quickdraw():
         'name': 'convolutional_bottleneck',
         'params':{
             'stride': 1,
-            'encode_nb_filters': [64, 128, 256],
-            'encode_filter_sizes': [5, 5, 5],
-            'encode_activations': ['relu', 'relu', 'relu'],
+            'encode_nb_filters': [64, 128, 256, 256, 256],
+            'encode_filter_sizes': [5, 5, 5, 5, 5],
+            'encode_activations': ['relu', 'relu', 'relu', 'relu', 'relu'],
             'code_activations': [
                 {'name': 'winner_take_all_spatial', 'params': {}},
                 {'name': 'winner_take_all_channel', 'params': {'stride': 1}},
             ],
-            'decode_nb_filters': [128, 64],
-            'decode_filter_sizes': [5, 5],
-            'decode_activations': ['relu', 'relu'],
+            'decode_nb_filters': [256, 256, 128, 64],
+            'decode_filter_sizes': [5, 5, 5, 5],
+            'decode_activations': ['relu', 'relu', 'relu', 'relu'],
             'output_filter_size': 5,
             'output_activation': 'sigmoid'
          }
     }
     g = basic_generate_params.copy()
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 1000,
+        'nb_iter': 50,
+        'binarize':{
+            'name': 'binary_threshold',
+            'params': {
+                'one_ratio': 0.15,
+                'is_moving': True,
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
     return t, g
