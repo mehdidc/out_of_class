@@ -1387,6 +1387,7 @@ def mnist_discrete():
     }
     return t, g 
 
+
 def quickdraw():
     t = basic_train_params.copy()
     t['data']['train']['pipeline'][0]['params']['filename'] = '../data/quickdraw.npz'
@@ -1423,6 +1424,47 @@ def quickdraw():
         'noise':{
             'name': 'none',
             'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
+
+def lld():
+    t, g = shoes_discrete2()
+    t['data']['train']['pipeline'][0]['params']['filename'] = '../data/lld.npz'
+    t['data']['train']['pipeline'][0]['params']['nb'] = 50000
+    
+    t['model']['params'] = {
+        'stride': 1,
+        'encode_nb_filters': [128] * 6,
+        'encode_filter_sizes': [5] * 6,
+        'encode_activations': ['relu'] * 6,
+        'code_activations': [
+            {'name': 'winner_take_all_spatial', 'params': {}},
+        ],
+        'decode_nb_filters': [128] * 5 ,
+        'decode_filter_sizes': [5] * 5,
+        'decode_activations': ['relu'] * 5,
+        'output_filter_size': 5,
+        'output_activation': {'name': 'axis_softmax', 'params': {'axis': 1}},
+    }
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 100,
+        'nb_iter': 100,
+        'binarize':{
+            'name': 'onehot',
+            'params': {
+                'axis': 1
+            }
+        },
+        'noise':{
+            'name': 'none',
+            'params': {
+               #'axis': 1,
+               #'proba': 0.5,
             }
         },
         'stop_if_unchanged': False,
