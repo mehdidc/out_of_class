@@ -1437,34 +1437,34 @@ def lld():
     t['data']['train']['pipeline'][0]['params']['nb'] = 50000
     
     t['model']['params'] = {
-        'stride': 1,
-        'encode_nb_filters': [128] * 6,
-        'encode_filter_sizes': [5] * 6,
-        'encode_activations': ['relu'] * 6,
+        'stride': 2,
+        'encode_nb_filters': [128, 256, 512],
+        'encode_filter_sizes': [5] * 3,
+        'encode_activations': ['relu'] * 3,
         'code_activations': [
-            {'name': 'winner_take_all_spatial', 'params': {}},
+            {'name': 'winner_take_all_kchannel', 'params': {'zero_ratio': 0.95}},
         ],
-        'decode_nb_filters': [128] * 5 ,
-        'decode_filter_sizes': [5] * 5,
-        'decode_activations': ['relu'] * 5,
+        'decode_nb_filters': [256, 128],
+        'decode_filter_sizes': [5] * 2,
+        'decode_activations': ['relu'] * 2,
         'output_filter_size': 5,
         'output_activation': {'name': 'axis_softmax', 'params': {'axis': 1}},
     }
     g['method']['params'] = {
         'batch_size': 128,
-        'nb_samples': 100,
+        'nb_samples': 1000,
         'nb_iter': 100,
         'binarize':{
             'name': 'onehot',
             'params': {
-                'axis': 1
+                'axis': 1,
             }
         },
         'noise':{
             'name': 'none',
             'params': {
-               #'axis': 1,
-               #'proba': 0.5,
+               'axis': 1,
+               'proba': 0.1,
             }
         },
         'stop_if_unchanged': False,
