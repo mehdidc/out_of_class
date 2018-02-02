@@ -182,43 +182,6 @@ def evaluate(*, force=False, name=None, job=None, sampler=None):
         print(stats)
         db.job_update(j['summary'], {'stats': stats})
 
-
-def sanity():
-    db = load_db()
-    jobs = db.all_jobs()
-    """
-    for j in jobs:
-        print(j['summary'])
-        stats = {}
-        if j.get('stats') is not None:
-            stats.update(j['stats'])
-        if 'attractor' in stats:
-            del stats['attractor']
-        if 'recons' in stats:
-            stats['recons_ratio'] = stats['recons']
-            del stats['recons']
-        cols = {}
-        for k, v in stats.items():
-            if ('count' in k) or ('objectness' in k) or ('emnist' in k) or ('max' in k) or ('entropy' in k) or ('mmd' in k) or ('frechet' in k) or ('diversity' in k) or ('entropy' in k):
-                cols[k] = v
-        for k in cols.keys():
-            del stats[k]
-        if len(cols):
-            stats['metrics'].update(cols)
-        if 'hwrt' in stats:
-            del stats['hwrt']
-        db.job_update(j['summary'], {'stats': stats})
-    """
-    for j in jobs:
-        stats = j['stats']
-        stats['recons_ratio']['hwrt'] = stats['recons_ratio']['hwrt_thin']
-        del stats['recons_ratio']['hwrt_thin']
-        stats['recons_ratio']['digits'] = stats['recons_ratio']['digits_test']
-        del stats['recons_ratio']['digits_test']
-        print(stats['recons_ratio'])
-        db.job_update(j['summary'], {'stats': stats})
-
-
 def get_hypers_df():
     db = load_db()
     jobs = db.jobs_with()
@@ -296,6 +259,7 @@ def get_hypers_df():
     df_full = df_full.set_index('job_id')
     return df_full
 
+
 def hypers(*, out='../export/hypers.csv'):
     from sklearn.utils import shuffle
     from itertools import combinations
@@ -369,4 +333,4 @@ def hypers(*, out='../export/hypers.csv'):
 
 
 if __name__ == '__main__':
-    run([evaluate, hypers, sanity])
+    run([evaluate, hypers])
