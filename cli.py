@@ -22,19 +22,21 @@ def thumbnails():
         imsave('export/thumbnails/{}.png'.format(folder), im)
     
 
-def extract(*, generator='mnist', discriminator='letters', classes=None, out='extracted.png', nb=10):
+def extract(*, generator='mnist', discriminator='letters', classes=None, out='extracted.png', nb=10, limit=None):
     data = np.load('ae/results/{}/gen/generated.npz'.format(generator))
     X = data['generated']
+    if limit:
+        limit = int(limit)
+        X = X[0:limit]
     discr = load('discr/{}'.format(discriminator))
     y = discr.predict(X)
 
     if classes is None:
         classes = np.arange(y.shape[1])
     else:
-        first, last = classes.split('-')
-        first = int(first)
-        last = int(last)
-        classes = np.arange(first, last)
+        classes = classes.split(',')
+        classes = [int(c) for c in classes]
+        classes = np.array(classes)
 
     x = []
     for c in classes:
@@ -140,6 +142,43 @@ def sanity():
             del stats['hwrt']
         db.job_update(j['summary'], {'stats': stats})
 
+def symetric_diff(*, gen1='mnist', gen2='mnist2', nb=1, a1=1.0, a2=-1.0, nb_samples=1, nb_iter=10):
+    m1 = load('ae/results/{}'.format(gen1))
+    m2 = load('ae/results/{}'.format(gen2))
+    x = np.random.uniform(size=(nb_samples, 1, 28, 28)).astype('float32')
+    for i in range(nb_iter):
+        d1 = m1.predict(x) - x
+        d2 = m2.predict(x) - x
+        if i < 30:
+            x += d1
+        else:
+            x += a1 * d1 + a2 * d2
+        x = np.clip(x, 0, 1)
+        print((d1**2).mean(), (d2**2).mean())
+    x = grid_of_images_default(x)
+    imsave('out.png', x)
+
+def symetric_diff2(*, gen1='mnist', gen2='mnist2', nb=1, a1=1.0, a2=-1.0, nb_samples=1, nb_iter=10):
+    import keras.backend as K
+    m1 = load('ae/results/{}'.format(gen1))
+    m2 = load('ae/results/{}'.format(gen2))
+    X = K.placeholder(m1.input_shape)
+    r1 = ((m1(X) - X) ** 2).mean()
+    r2 = ((m2(X) - X) ** 2).mean()
+    L = a1 * r1 + a2 * r2
+    grad = K.gradients(L, [X])
+    get_grad = K.function([X], grad)
+    x = np.random.uniform(size=(nb_samples, 1, 28, 28)).astype('float32')
+    for _ in range(nb_iter):
+        g, =  get_grad([x])
+        x -= g
+        x = np.clip(x, 0, 1)
+        d1 = ((m1.predict(x) - x) ** 2).mean()
+        d2 = ((m2.predict(x) - x) ** 2).mean()
+        print(d1, d2)
+    x = grid_of_images_default(x)
+    imsave('out.png', x)
+
 
 if __name__ == '__main__':
-    run([condgen, extract, thumbnails])
+    run([condgen, extract, thumbnails, symetric_diff, symetric_diff2])
