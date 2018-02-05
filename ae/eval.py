@@ -38,7 +38,7 @@ def _recons_ratio(folder, **kw):
         err = float(err)
         out[name] = err
     print(out)
-    return {'recons': out}
+    return {'recons_ratio': out}
 
 
 def _ratio_unique(folder, **kw):
@@ -194,8 +194,10 @@ def get_hypers_df():
             col[k] = v
             if type(v) is dict:
                 for kk, v in v.items():
-                    col[kk]=v
-                    col[k + '_' + kk] = v
+                    if k in ('metrics',):
+                        col[kk] = v
+                    else:
+                        col[k + '_' + kk] = v
         try:
             col['stride'] = j['content']['train']['model']['params']['code_activations'][-1]['params']['stride']
         except Exception:
@@ -248,14 +250,19 @@ def get_hypers_df():
             col['hwrt_object'] = 1 - col['hwrt_entropy']
         except Exception:
             pass
-        if 'recons_ratio' in col:
-            del col['recons_ratio']
-        if 'recons' in col:
-            del col['recons']
-        if 'metrics' in col:
-            del col['metrics']
         rows.append(col)
+    dropcols = [
+        'metrics',
+        'recons',
+        'recons_digits_test',
+        'recons_hwrt_thin',
+        'recons_ratio',
+        'recons_digits',
+        'recons_hwrt',
+    ]
     df_full = pd.DataFrame(rows)
+    df_full = df_full.drop(dropcols, axis=1)
+    print(df_full.columns)
     df_full = df_full.set_index('job_id')
     return df_full
 
