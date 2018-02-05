@@ -376,3 +376,44 @@ def mnist_noise(rng):
         'seed': 42,
     }
     return t, g
+
+def mnist_dense(rng):
+    proba = rng.choice((0.0, 0.1, 0.2, 0.3, 0.4, 0.5))
+    proba = float(proba)
+
+    nb_hidden_units = rng.choice((128, 256, 512, 1024, 2048))
+    nb_hidden_units = int(nb_hidden_units)
+
+    nb_layers = 1
+
+    t, g = mnist()
+    t['model'] = [
+        {'name': 'noise', 'params':{'type': 'salt_and_pepper', 'params':{'proba': proba}}},
+        {
+            'name': 'fully_connected',
+            'params':{
+                'nb_hidden_units': [nb_hidden_units for _ in range(nb_layers)],
+                'activations': ['relu'],
+                'output_activation': 'sigmoid',
+             }
+        }
+    ]
+    g['method']['params'] = {
+        'batch_size': 128,
+        'nb_samples': 1000,
+        'nb_iter': 100,
+        'noise':{
+            'name': 'salt_and_pepper',
+            'params': {
+                'proba': proba
+            }
+        },
+        'binarize':{
+            'name': 'none',
+            'params': {
+            }
+        },
+        'stop_if_unchanged': False,
+        'seed': 42,
+    }
+    return t, g
